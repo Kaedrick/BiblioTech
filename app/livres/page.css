@@ -1,0 +1,40 @@
+@font-face {
+    font-family: SunnySpell;
+    src: url('../../public/fonts/SunnyspellsRegular-MV9ze.otf');
+}
+
+.title-text {
+    font-family: SunnySpell;
+    font-size:xx-large;
+}
+
+.card-header {
+    background: linear-gradient(0deg, rgba(34,193,195,1) 0%, rgba(45,208,253,1) 100%);
+}
+
+.image {
+    background-color: black;
+}
+
+ .card-class {
+    display: grid;
+    min-width: 50%;
+    grid-template-columns: repeat(3, 300px);
+    grid-gap: 50px;
+    
+} 
+
+@media (max-width:1014px) {
+    .card-class {
+        display: grid;
+        min-width: 50%;
+        grid-template-columns: repeat(2, 300px);
+        grid-gap: 50px;
+    } 
+}
+
+@media (max-width:660px) {
+    .card-class {
+        display: block;
+    } 
+}
