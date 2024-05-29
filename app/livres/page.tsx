@@ -6,7 +6,6 @@ import React from "react";
 import { useState, useEffect } from "react";
 import {Card, CardHeader, CardBody, CardFooter, Image, Button, Divider} from '@nextui-org/react';
 import { BrowserRouter as Router, Route, Link } from "react-router-dom";
-import jsonData from '../api/result.json'
 import axios from 'axios';
 import "./page.css";
 
