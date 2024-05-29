@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Navbar as NextUINavbar,
   NavbarContent,
@@ -11,20 +11,88 @@ import {
 } from "@nextui-org/navbar";
 import { Button } from "@nextui-org/button";
 import NextLink from "next/link";
+import Image from 'next/image';
+import Link from "next/link";
 import clsx from "clsx";
 import { Logo } from "@/components/icons";
 import { siteConfig } from "@/config/site";
 import { usePathname } from 'next/navigation';
+import axios from 'axios';
 import "./../styles/navbar.css";
+import e from 'express';
 
 export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Waits for loggin check before loading the page
   const pathname = usePathname();
+
+  const toggleProfileMenu = () => {
+    setIsProfileMenuOpen(!isProfileMenuOpen);
+  };
+  
+
+  useEffect(() => {
+    const checkIfLoggedIn = () => {
+      axios.get('http://localhost:3001/check-auth', { withCredentials: true })
+        .then((res) => {
+          if (res.data.isAuthenticated) {
+            setIsAuthenticated(true);
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+        })
+        .finally(() => {
+          setIsLoading(false); // Ends loading AFTER the call to the server
+        });
+
+        
+    };
+
+    // If user clicks outside of the menu, it'll close it
+    document.body.addEventListener('click', (event: MouseEvent) => {
+      if (!event.target) {
+        return;
+      }
+    
+      const closestProfileMenu = (event.target as HTMLElement).closest('.profile-menu');
+    
+      if (!closestProfileMenu) {
+        setIsProfileMenuOpen(false);
+      }
+    });
+    checkIfLoggedIn();
+  }, []);
+
+  if (isLoading) {
+    return null;
+  }
 
   if (typeof window !== "undefined") {
     window.addEventListener('resize', () => {setIsMenuOpen(false)});
-    
   }
+
+  const logout = () => {
+    console.log("test");
+    axios({
+      method: "post",
+      withCredentials: true,
+      url: "http://localhost:3001/logout",
+      timeout: 5000
+    }).then((res) => {
+      if(res.status === 200) {
+        console.log("OK");
+        window.location.reload();
+      }
+    }).catch((err) => {
+      if (err.response) {
+          console.log(err);
+          console.log("ERROR 403");
+      }
+    })
+  };
 
   return (
     <NextUINavbar maxWidth="lg" position="sticky">
@@ -52,13 +120,48 @@ export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
           </ul>
         </div>
         <div className="flex gap-4">
-          <Button color="primary" variant="solid" onClick={onOpenModal} className="sign">
-              Connexion
-            </Button>
-          <Button color="secondary" variant="faded" className="sign">
-            Inscription
-          </Button>
+        {!isAuthenticated && (
+          <>
+            <Button color="primary" variant="solid" onClick={onOpenModal} className="sign">
+                Connexion
+              </Button>
+            <Link href="/inscription" legacyBehavior>
+              <Button color="secondary" variant="faded" className="sign">
+                Inscription
+              </Button>
+            </Link>
+          </>
+        )}
         </div>
+        <div>
+        {isAuthenticated && (
+          <>
+            <Image
+              src="/img/profil.png" 
+              alt="Profile"
+              width={43}
+              height={43}
+              className="cursor-pointer profile"
+              onClick={toggleProfileMenu}
+            />
+            {isProfileMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-59 profile-menu">
+                <ul>
+                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                    Mon profil
+                  </li>
+                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                    Mes réservations
+                  </li>
+                  <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={logout}>
+                      Déconnexion
+                  </li>
+                </ul>
+              </div>
+            )}
+            </>
+            )}
+            </div>
         <NavbarMenuToggle
           aria-label="Toggle menu"
           className="navbar-menu-toggle"
@@ -76,14 +179,24 @@ export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
             </NavbarMenuItem>
           ))}
 		  <NavbarMenuItem>
+      {!isAuthenticated && (
+          <>
             <Button color="primary" variant="solid" onClick={onOpenModal} className="sign2">
               Connexion
             </Button>
+          </>
+        )}  
           </NavbarMenuItem>
           <NavbarMenuItem>
-            <Button color="secondary" variant="faded" className="sign2">
-              Inscription
-            </Button>
+          {!isAuthenticated && (
+            <>
+            <Link href="/inscription" legacyBehavior>
+              <Button color="secondary" variant="faded" className="sign2">
+                Inscription
+              </Button>
+            </Link>
+            </>
+          )}
           </NavbarMenuItem>
         </NavbarMenu>
       )}

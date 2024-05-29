@@ -6,7 +6,8 @@ module.exports = function(passport) {
     passport.use(
         new localStrategy({
             usernameField: 'email',
-            passwordField: 'password'
+            passwordField: 'password',
+            expires: '1d'
         },  (email, password, done) => {
             const query = "SELECT * FROM user WHERE email = ?";
             
@@ -31,13 +32,13 @@ module.exports = function(passport) {
     passport.serializeUser((user, done) => {
         done(null, user.idUser);
     })
-
+    
     passport.deserializeUser((id, done) => {
-        const query = "SELECT * FROM user WHERE id = ?";
+        const query = "SELECT * FROM user WHERE idUser = ?";
         connection.query(query, [id], (err, rows) => {
             if(err) throw{err};
             const userInfo = {
-                id: rows[0].idUser,
+                idUser: rows[0].idUser,
                 idRole: rows[0].idRole,
                 email: rows[0].email,
                 firstname: rows[0].firstname,

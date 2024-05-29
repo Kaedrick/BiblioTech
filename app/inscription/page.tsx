@@ -27,6 +27,21 @@ export default function Register() {
       setRegisterPassword('');
   }
 
+    // Checks if user loggeed
+    const checkIfLoggedIn = () => {
+      axios.get('http://localhost:3001/check-auth', { withCredentials: true })
+          .then((res) => {
+              if (res.data.isAuthenticated) {
+                  window.location.href = '/'; 
+              }
+          })
+          .catch((err) => {
+              console.log(err);
+          });
+    };
+
+    checkIfLoggedIn();
+
     const register = (e: any) => {
       e.preventDefault(); // Keeps page from refreshing
 

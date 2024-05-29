@@ -23,7 +23,11 @@ app.use(passport.initialize());
 app.use(passport.session());
 require("./passportConfig")(passport);
 
-app.post('/inscription', (req, res) => {
+app.get('/inscription', checkNotAuthenticated, (req, res) => {
+    res.render('inscription');
+});
+
+app.post('/inscription', checkNotAuthenticated,  (req, res) => {
     const email = req.body.email;
     const password = req.body.password;
     const firstname = req.body.firstname;
@@ -47,23 +51,24 @@ app.post('/inscription', (req, res) => {
     });
 });
 
-app.post('/connexion', (req, res, next) => {
+app.get('/connexion', checkNotAuthenticated, (req, res) => {
+    res.render('connexion'); 
+});
+
+app.post('/connexion', checkNotAuthenticated, (req, res, next) => {
     console.log(req.body); 
     passport.authenticate('local', (err, user, info) => {
         if(err) {return console.log(err);}
         if(!user) {
-            // Si aucun utilisateur n'est trouvé, vérifiez si c'est dû à un mauvais e-mail
-            // ou à un mauvais mot de passe.
             if(info && info.message === 'Invalid Email') {
                 return res.status(401).send('Adresse e-mail incorrecte.');
             }
             if(info && info.message === 'Invalid Password') {
                 return res.status(402).send('Mot de passe incorrect.');
             }
-            // Si l'utilisateur est null et aucune info n'est disponible, renvoyer une erreur générale.
             return res.status(403).send('Erreur d\'authentification.');
         }
-        // Si l'utilisateur est trouvé et authentifié avec succès, loggez-le.
+        // Success login
         req.login(user, (err) => {
             if(err) { console.log(err); }
             res.send("Utilisateur authentifié avec succès");
@@ -75,6 +80,46 @@ app.post('/connexion', (req, res, next) => {
 app.get('/getUser', (req, res) => {
     res.send(req.user);
 })
+
+function checkNotAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) {
+        return res.redirect('/'); // Redirige vers la page principale
+    }
+    next();
+}
+
+app.get('/check-auth', (req, res) => {
+    if (req.isAuthenticated()) {
+        res.send({ isAuthenticated: true });
+    } else {
+        res.send({ isAuthenticated: false });
+    }
+});
+
+app.post('/logout', (req, res, next) => {
+    req.logout((err) => {
+      if (err) { return next(err); }
+      res.status(200).send('Déconnecté avec succès.');
+    });
+  });
+
+  app.get('/api/books', (req, res) => {
+    const idBook = req.query.idBook;
+
+    let query = 'SELECT idBook, title, author, description, image FROM book';
+    if (idBook) {
+        query += ` WHERE idBook = ${idBook}`;
+    }
+
+    connection.query(query, (error, results) => {
+        if (error) {
+            console.error("Error fetching books data:", error);
+            res.status(500).json({ message: "Error fetching books data" });
+        } else {
+            res.status(200).json(results); // Send books data as JSON response
+        }
+    });
+});
 
 app.listen(3001, () =>{
     console.log("Server started on port 3001");

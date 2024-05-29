@@ -27,6 +27,7 @@ const ModalLogin = ({ show, onClose }) => {
     }).then((res) => {
       if(res.status === 200) {
         swal("Succès", "Authentification réussie.", "success")
+        window.location.reload();
       }
     }).catch((err) => {
       if (err.response) {
