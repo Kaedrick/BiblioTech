@@ -17,11 +17,11 @@ export default function LivresDetails() {
           const fetchBook = async () => {
               try {
                   const response = await axios.get(`http://localhost:3001/api/books?idBook=${idBook}`);
-                  setBook(response.data[0]); // S'assurer que vous obtenez l'objet livre
+                  setBook(response.data[0]); 
               } catch (error: any) {
                   console.error("Erreur lors de la récupération du livre :", error);
               } finally {
-                  setLoading(false); // Stops loading once everything is charged
+                  setLoading(false); // Stops loading once everything's charged
               }
           };
         

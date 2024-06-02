@@ -7,6 +7,8 @@ const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const app = express();
 const connection = require('./database.js'); 
+const { addDays } = require('date-fns');
+const cron = require('node-cron');  
 
 app.use(boddParser.json());
 app.use(boddParser.urlencoded({ extended: true }));
@@ -83,7 +85,7 @@ app.get('/getUser', (req, res) => {
 
 function checkNotAuthenticated(req, res, next) {
     if (req.isAuthenticated()) {
-        return res.redirect('/'); // Redirige vers la page principale
+        return res.redirect('/'); // Redirect to mp
     }
     next();
 }
@@ -120,6 +122,109 @@ app.post('/logout', (req, res, next) => {
         }
     });
 });
+
+
+app.get('/api/reservations', (req, res) => {
+    const idBook = req.query.idBook;
+    const query = `
+        SELECT r.idReservation, r.idCopy, r.reservationDate
+        FROM reservation r
+        JOIN copy c ON r.idCopy = c.idCopy
+        WHERE c.idBook = ? AND r.status = 0
+    `;
+    connection.query(query, [idBook], (error, results) => {
+        if (error) {
+            console.error("Error fetching reservations data:", error);
+            res.status(500).json({ message: "Error fetching reservations data" });
+        } else {
+            res.status(200).json(results);
+        }
+    });
+});
+
+function addDays(date, days) {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
+}
+
+app.post('/api/reservations', (req, res) => {
+    const { userId, idBook, reservationStartDate } = req.body;
+    const reservationDate = new Date();
+    const reservationEndDate = addDays(new Date(reservationStartDate), 21);
+
+    const getAvailableCopy = `
+        SELECT idCopy 
+        FROM copy 
+        WHERE idBook = ? AND isAvailable = 1 
+        LIMIT 1
+    `;
+
+    connection.query(getAvailableCopy, [idBook], (err, results) => {
+        if (err) {
+            console.error("Error finding available copy:", err);
+            return res.status(500).json({ message: "Error finding available copy" });
+        }
+        
+        if (results.length === 0) {
+            return res.status(400).json({ message: "No available copies for this book" });
+        }
+
+        const idCopy = results[0].idCopy;
+
+        const insertReservationQuery = `
+            INSERT INTO reservation (idCopy, userId, reservationDate, status, reservationStartDate, reservationEndDate)
+            VALUES (?, ?, ?, 1, ?, ?)
+        `;
+
+        connection.query(insertReservationQuery, [idCopy, userId, reservationDate, reservationStartDate, reservationEndDate], (err, result) => {
+            if (err) {
+                console.error("Error creating reservation:", err);
+                return res.status(500).json({ message: "Error creating reservation" });
+            }
+
+            // Schedule a job to set isAvailable to 0 when the reservation starts
+            cron.schedule(new Date(reservationStartDate), () => {
+                const updateCopyQuery = `
+                    UPDATE copy 
+                    SET isAvailable = 0 
+                    WHERE idCopy = ?
+                `;
+
+                connection.query(updateCopyQuery, [idCopy], (err, updateResult) => {
+                    if (err) {
+                        console.error("Error updating copy availability:", err);
+                    } else {
+                        console.log(`Copy ${idCopy} set to unavailable for reservation`);
+                    }
+                });
+            });
+
+            res.status(200).json({ message: "Reservation successful", reservationId: result.insertId });
+        });
+    });
+});
+
+// Make the copy of a book available again (manual, admin interface)
+app.post('/api/return', (req, res) => {
+    const { idCopy } = req.body;
+
+    const updateCopyQuery = `
+        UPDATE copy 
+        SET isAvailable = 1 
+        WHERE idCopy = ?
+    `;
+
+    connection.query(updateCopyQuery, [idCopy], (err, result) => {
+        if (err) {
+            console.error("Error updating copy availability:", err);
+            return res.status(500).json({ message: "Error updating copy availability" });
+        }
+
+        res.status(200).json({ message: "Book returned successfully and is now available" });
+    });
+});
+
 
 app.listen(3001, () =>{
     console.log("Server started on port 3001");
