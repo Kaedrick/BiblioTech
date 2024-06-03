@@ -7,8 +7,9 @@ const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
 const app = express();
 const connection = require('./database.js'); 
-const { addDays } = require('date-fns');
+const { addDays: addDaysDateFns } = require('date-fns');
 const cron = require('node-cron');  
+const moment = require('moment');
 
 app.use(boddParser.json());
 app.use(boddParser.urlencoded({ extended: true }));
@@ -58,7 +59,6 @@ app.get('/connexion', checkNotAuthenticated, (req, res) => {
 });
 
 app.post('/connexion', checkNotAuthenticated, (req, res, next) => {
-    console.log(req.body); 
     passport.authenticate('local', (err, user, info) => {
         if(err) {return console.log(err);}
         if(!user) {
@@ -123,106 +123,157 @@ app.post('/logout', (req, res, next) => {
     });
 });
 
-
-app.get('/api/reservations', (req, res) => {
-    const idBook = req.query.idBook;
-    const query = `
-        SELECT r.idReservation, r.idCopy, r.reservationDate
-        FROM reservation r
-        JOIN copy c ON r.idCopy = c.idCopy
-        WHERE c.idBook = ? AND r.status = 0
-    `;
-    connection.query(query, [idBook], (error, results) => {
-        if (error) {
-            console.error("Error fetching reservations data:", error);
-            res.status(500).json({ message: "Error fetching reservations data" });
-        } else {
-            res.status(200).json(results);
-        }
-    });
-});
-
 function addDays(date, days) {
     const result = new Date(date);
     result.setDate(result.getDate() + days);
     return result;
 }
 
-app.post('/api/reservations', (req, res) => {
-    const { userId, idBook, reservationStartDate } = req.body;
-    const reservationDate = new Date();
-    const reservationEndDate = addDays(new Date(reservationStartDate), 21);
+app.get('/api/books/reserved-dates/:idBook', async (req, res) => {
+    const idBook = req.params.idBook;
 
-    const getAvailableCopy = `
-        SELECT idCopy 
-        FROM copy 
-        WHERE idBook = ? AND isAvailable = 1 
-        LIMIT 1
-    `;
-
-    connection.query(getAvailableCopy, [idBook], (err, results) => {
-        if (err) {
-            console.error("Error finding available copy:", err);
-            return res.status(500).json({ message: "Error finding available copy" });
-        }
-        
-        if (results.length === 0) {
-            return res.status(400).json({ message: "No available copies for this book" });
-        }
-
-        const idCopy = results[0].idCopy;
-
-        const insertReservationQuery = `
-            INSERT INTO reservation (idCopy, userId, reservationDate, status, reservationStartDate, reservationEndDate)
-            VALUES (?, ?, ?, 1, ?, ?)
+    try {
+        // Requête à la base de données pour récupérer les réservations pour ce livre
+        const query = `
+            SELECT reservationStartDate, reservationEndDate
+            FROM reservation
+            WHERE idBook = ? AND status = 1
         `;
-
-        connection.query(insertReservationQuery, [idCopy, userId, reservationDate, reservationStartDate, reservationEndDate], (err, result) => {
-            if (err) {
-                console.error("Error creating reservation:", err);
-                return res.status(500).json({ message: "Error creating reservation" });
-            }
-
-            // Schedule a job to set isAvailable to 0 when the reservation starts
-            cron.schedule(new Date(reservationStartDate), () => {
-                const updateCopyQuery = `
-                    UPDATE copy 
-                    SET isAvailable = 0 
-                    WHERE idCopy = ?
-                `;
-
-                connection.query(updateCopyQuery, [idCopy], (err, updateResult) => {
-                    if (err) {
-                        console.error("Error updating copy availability:", err);
-                    } else {
-                        console.log(`Copy ${idCopy} set to unavailable for reservation`);
-                    }
-                });
+        const reservations = await new Promise((resolve, reject) => {
+            connection.query(query, [idBook], (error, results) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
             });
-
-            res.status(200).json({ message: "Reservation successful", reservationId: result.insertId });
         });
-    });
+
+        // Requête pour récupérer la quantité de livres disponibles
+        const quantityQuery = `
+            SELECT quantity
+            FROM book
+            WHERE idBook = ?
+        `;
+        const [{ quantity }] = await new Promise((resolve, reject) => {
+            connection.query(quantityQuery, [idBook], (error, results) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
+            });
+        });
+
+        // Traitement des réservations pour générer les dates réservées
+        const dateCountMap = new Map();
+        reservations.forEach((reservation) => {
+            let currentDate = moment(reservation.reservationStartDate);
+            const endDate = moment(reservation.reservationEndDate);
+            while (currentDate <= endDate) {
+                const dateString = currentDate.format('YYYY MM DD');
+                dateCountMap.set(dateString, (dateCountMap.get(dateString) || 0) + 1);
+                currentDate.add(1, 'day');
+            }
+        });
+
+        // Envoi des dates réservées et de la quantité disponible en réponse
+        res.status(200).json({
+            reservedDates: Array.from(dateCountMap),
+            availableQuantity: quantity - reservations.length
+        });
+    } catch (error) {
+        console.error("Erreur lors de la récupération des dates réservées :", error);
+        res.status(500).json({ message: "Erreur lors de la récupération des dates réservées" });
+    }
 });
 
-// Make the copy of a book available again (manual, admin interface)
-app.post('/api/return', (req, res) => {
-    const { idCopy } = req.body;
+app.post('/api/books/reservations', async (req, res) => {
+    const { userId, idBook, reservationStartDate } = req.body;
+    const reservationEndDate = moment(reservationStartDate).add(21, 'days').format('YYYY-MM-DD'); // Ajout de 21 jours à la date de début de réservation
 
-    const updateCopyQuery = `
-        UPDATE copy 
-        SET isAvailable = 1 
-        WHERE idCopy = ?
-    `;
+    try {
+        // Vérification de la disponibilité des exemplaires du livre
+        const query = `
+            SELECT COUNT(*) AS numReservations
+            FROM reservation
+            WHERE idBook = ? AND reservationStartDate <= ? AND reservationEndDate >= ? AND status = 1
+        `;
+        const { numReservations } = await new Promise((resolve, reject) => {
+            connection.query(query, [idBook, reservationEndDate, reservationStartDate], (error, results) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results[0]);
+                }
+            });
+        });
 
-    connection.query(updateCopyQuery, [idCopy], (err, result) => {
-        if (err) {
-            console.error("Error updating copy availability:", err);
-            return res.status(500).json({ message: "Error updating copy availability" });
+        // Vérification si le nombre de réservations est inférieur à la quantité disponible
+        const quantityQuery = `
+            SELECT quantity
+            FROM book
+            WHERE idBook = ?
+        `;
+        const [{ quantity }] = await new Promise((resolve, reject) => {
+            connection.query(quantityQuery, [idBook], (error, results) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
+            });
+        });
+
+        if (numReservations >= quantity) {
+            return res.status(400).json({ message: "Toutes les copies de ce livre sont déjà réservées pour cette date." });
         }
 
-        res.status(200).json({ message: "Book returned successfully and is now available" });
-    });
+        // Création de la réservation
+        const insertQuery = `
+            INSERT INTO reservation (idBook, userId, reservationStartDate, reservationEndDate, status, reservationDate)
+            VALUES (?, ?, ?, ?, 1, ?)
+        `;
+        await new Promise((resolve, reject) => {
+            connection.query(insertQuery, [idBook, userId, reservationStartDate, reservationEndDate, moment().format('YYYY-MM-DD')], (error) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        res.status(200).json({ message: "Réservation réussie." });
+    } catch (error) {
+        console.error("Erreur lors de la création de la réservation :", error);
+        res.status(500).json({ message: "Erreur lors de la création de la réservation." });
+    }
+});
+
+
+
+// Make the copy of a book available again (manual, admin interface) - MODIFY !!
+app.post('/api/return', (req, res) => {
+    // REDO WITHOUT TABLE COPY : SIMPLY CHANGE QUANTITY!
+});
+
+app.get('/api/current_user', (req, res) => {
+    if (req.isAuthenticated()) {
+      res.json(req.user);
+    } else {
+      res.status(401).json({ message: 'User not authenticated' });
+    }
+  });
+
+app.get('/api/books/available-copies', (req, res) => {
+    // REDO WITHOUT IDCOPY
+});
+
+
+app.get('/getUserID', (req, res) => {
+    const userID = req.user.idUser;
+    res.json({ userID });
 });
 
 

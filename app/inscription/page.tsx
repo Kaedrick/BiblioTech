@@ -87,8 +87,6 @@ export default function Register() {
     }
       
       return (
-        // AJOUTER REDIRECTION SI UTILISATEUR DEJA LOG !!
-        // Ajouter contrôle sécurité mdp (maj caractère special etc)
         <div>
           <div className="content">
             <h1 className="textReg"><b>Inscription</b></h1>
