@@ -8,6 +8,9 @@ import {Card, CardHeader, CardBody, CardFooter, Image, Button, Divider} from '@n
 import { BrowserRouter as Router, Route, Link } from "react-router-dom";
 import axios from 'axios';
 import "./page.css";
+require('dotenv').config();
+const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
+const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
 
 function truncateDescription(description:string | undefined): string {
 	if(!description) return ""
@@ -30,7 +33,7 @@ export default function Livres() {
     useEffect(() => {
 		const fetchBooks = async () => {
 		  try {
-			const response = await axios.get('http://localhost:3001/api/books');
+			const response = await axios.get(`${serverUrl}/api/books`);
 			setBook(response.data);
 		  } catch (error: any) {
 			console.error("Erreur lors de la récupération des livres :", error);

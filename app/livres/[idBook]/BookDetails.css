@@ -78,3 +78,35 @@ body {
     height: 100vh;
     font-size: 1.5em;
 }
+
+.userNotAuthDiv {
+    border: 2px solid #ff0000; /* Bordure rouge */
+    padding: 20px;
+    background-color: #fff5f5; /* Fond légèrement rouge pour attirer l'attention */
+    border-radius: 10px; /* Bords arrondis */
+    margin-top: 20px;
+}
+
+.userNotAuth {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ff0000; /* Texte rouge pour le paragraphe principal */
+    margin-bottom: 10px;
+}
+
+.userNotAuthList {
+    padding-left: 20px;
+    list-style-type: disc;
+}
+
+.userNotAuthList li {
+    font-size: 16px;
+    margin-bottom: 5px;
+    color: #333; /* Couleur de texte foncée */
+    background-color: #ffe6e6; /* Fond légèrement rouge pour les éléments de la liste */
+    padding: 5px;
+    border-radius: 5px; /* Bords arrondis pour les éléments de la liste */
+    list-style-type: square;
+}
+
+

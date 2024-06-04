@@ -4,6 +4,9 @@ import React from 'react';
 import './page.css';
 import axios from "axios";
 import swal from 'sweetalert';
+require('dotenv').config();
+const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
+const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
 
 export default function Register() {
     
@@ -29,7 +32,7 @@ export default function Register() {
 
     // Checks if user loggeed
     const checkIfLoggedIn = () => {
-      axios.get('http://localhost:3001/check-auth', { withCredentials: true })
+      axios.get(`${serverUrl}/check-auth`, { withCredentials: true })
           .then((res) => {
               if (res.data.isAuthenticated) {
                   window.location.href = '/'; 
@@ -53,12 +56,12 @@ export default function Register() {
       if (!emailRegex.test(registerEmail)) {
         setErrorMessage('Adresse e-mail invalide.');
         return;
-    }
+      }
 
-    if (!passRegex.test(registerPassword)) {
-      setErrorMessage('Mot de passe invalide. Veuillez inclure au moins une majuscule, une minuscule, un caractère spécial, et un chiffre.');
-      return;
-  }
+      if (!passRegex.test(registerPassword)) {
+        setErrorMessage('Mot de passe invalide. Veuillez inclure au moins une majuscule, une minuscule, un caractère spécial, et un chiffre.');
+        return;
+      }
 
       axios({
         method: "post",
@@ -69,7 +72,7 @@ export default function Register() {
           lastname: registerLastname
         },
         withCredentials: true,
-        url: "http://localhost:3001/inscription",
+        url: `${serverUrl}/inscription`,
         timeout: 5000
       }).then((res) => {
         console.log(res)

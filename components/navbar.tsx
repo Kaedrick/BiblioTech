@@ -19,7 +19,9 @@ import { siteConfig } from "@/config/site";
 import { usePathname } from 'next/navigation';
 import axios from 'axios';
 import "./../styles/navbar.css";
-import e from 'express';
+require('dotenv').config();
+const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
+const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
 
 export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -35,7 +37,7 @@ export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
 
   useEffect(() => {
     const checkIfLoggedIn = () => {
-      axios.get('http://localhost:3001/check-auth', { withCredentials: true })
+      axios.get(`${serverUrl}/check-auth`, { withCredentials: true })
         .then((res) => {
           if (res.data.isAuthenticated) {
             setIsAuthenticated(true);
@@ -46,9 +48,7 @@ export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
         })
         .finally(() => {
           setIsLoading(false); // Ends loading AFTER the call to the server
-        });
-
-        
+        }); 
     };
 
     // If user clicks outside of the menu, it'll close it
@@ -79,7 +79,7 @@ export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
     axios({
       method: "post",
       withCredentials: true,
-      url: "http://localhost:3001/logout",
+      url: `${serverUrl}/logout`,
       timeout: 5000
     }).then((res) => {
       if(res.status === 200) {

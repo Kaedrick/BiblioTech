@@ -8,15 +8,20 @@ const bcrypt = require('bcrypt');
 const app = express();
 const connection = require('./database.js'); 
 const { addDays: addDaysDateFns } = require('date-fns');
-const cron = require('node-cron');  
 const moment = require('moment');
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+require('dotenv').config();
+const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
+const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
+
 
 app.use(boddParser.json());
 app.use(boddParser.urlencoded({ extended: true }));
 app.use(expressSession({ secret : 'mySecretKey', resave:false, saveUninitialized: false }));
 
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: `${siteUrl}`,
     credentials: true
 }));
 
@@ -26,33 +31,67 @@ app.use(passport.initialize());
 app.use(passport.session());
 require("./passportConfig")(passport);
 
+// Create a transporter for nodemailer
+const transporter = nodemailer.createTransport({
+    service: 'Gmail',
+    auth: {
+        user: 'bibliotech.assist@gmail.com',
+        pass: 'qxkguopsnihpvzpg'
+    }
+});
+
+const jwtSecret = 'jwtSecretK3y0910!'; 
+
 app.get('/inscription', checkNotAuthenticated, (req, res) => {
     res.render('inscription');
 });
 
-app.post('/inscription', checkNotAuthenticated,  (req, res) => {
+app.post('/inscription', checkNotAuthenticated, async (req, res) => {
     const email = req.body.email;
     const password = req.body.password;
     const firstname = req.body.firstname;
     const lastname = req.body.lastname;
 
-    const query = "INSERT INTO user (`email`, `password`, `firstname`, `lastname`) VALUES (?, ?, ?, ?)"
+    const query = "INSERT INTO user (`email`, `password`, `firstname`, `lastname`, `emailConfirm`) VALUES (?, ?, ?, ?, ?)";
     const query2 = "SELECT * FROM user WHERE email = ?"; // Checking if email exists
 
-    connection.query(query2, [email], (err, result) => {
-        if(err) {throw err;}
-        if(result.length > 0) { // If result.length > 0, then email exists
-            return res.status(409).send({message: "Adresse mail déjà inscrite."})
+    connection.query(query2, [email], async (err, result) => {
+        if (err) {
+            throw err;
         }
-        if(result.length === 0) {
+        if (result.length > 0) { // If result.length > 0, then email exists
+            return res.status(409).send({ message: "Adresse mail déjà inscrite." });
+        }
+        if (result.length === 0) {
             const hashedPassword = bcrypt.hashSync(password, 10);
-            connection.query(query, [email, hashedPassword, firstname, lastname], (err, result) => {
-                if(err) throw {err};
-                res.send({message : "Utilisateur créé."});
-            })
+            const emailConfirm     = 0; // Set emailConfirm to 0 initially
+            connection.query(query, [email, hashedPassword, firstname, lastname, emailConfirm], async (err, result) => {
+                if (err) {
+                    throw err;
+                }
+                // Create verification token
+                const token = jwt.sign({ email }, jwtSecret, { expiresIn: '1d' });
+
+                // Send verification email
+                const mailOptions = {
+                    from: 'bibliotech.assist@gmail.com',
+                    to: email,
+                    subject: 'BiblioTech - Activez votre compte',
+                    text: `Merci pour votre inscription! Merci de valider votre mail en cliquant sur le lien suivant : ${serverUrl}/verify-email?token=${token}`
+                };
+
+                try {
+                    await transporter.sendMail(mailOptions);
+                    res.send({ message: "Utilisateur créé. Veuillez vérifier votre email pour compléter l'inscription." });
+                } catch (emailErr) {
+                    console.error('Error sending email:', emailErr);
+                    res.status(500).send({ message: "Erreur lors de l'envoi de l'email de vérification." });
+                }
+            });
         }
     });
 });
+
 
 app.get('/connexion', checkNotAuthenticated, (req, res) => {
     res.render('connexion'); 
@@ -98,6 +137,31 @@ app.get('/check-auth', (req, res) => {
     }
 });
 
+app.get('/check-conditions', (req, res) => {
+    if (req.isAuthenticated()) {
+        const userId = req.user.idUser;
+        const query = 'SELECT strike, verified, emailConfirm FROM user WHERE idUser = ?';
+        connection.query(query, [userId], (error, results) => {
+            if (error) {
+                return res.status(500).json({error: 'Internal server error' });
+            }
+            if (results.length > 0) {
+                const user = results[0];
+                res.json({
+                    strike: user.strike,
+                    verified: user.verified,
+                    emailConfirm: user.emailConfirm
+                });
+            } else {
+                res.json({message: "NOT OK"});
+            }
+        });
+    } else {
+        res.json({ message: "NOT OK 2"});
+    }
+});
+
+
 app.post('/logout', (req, res, next) => {
     req.logout((err) => {
       if (err) { return next(err); }
@@ -133,14 +197,32 @@ app.get('/api/books/reserved-dates/:idBook', async (req, res) => {
     const idBook = req.params.idBook;
 
     try {
+        // Récupérer la quantité de copies disponibles pour ce livre
+        const bookQuery = `
+            SELECT quantity
+            FROM book
+            WHERE idBook = ?
+        `;
+        const bookResult = await new Promise((resolve, reject) => {
+            connection.query(bookQuery, [idBook], (error, results) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results[0]);
+                }
+            });
+        });
+
+        const quantity = bookResult.quantity;
+
         // Requête à la base de données pour récupérer les réservations pour ce livre
-        const query = `
+        const reservationQuery = `
             SELECT reservationStartDate, reservationEndDate
             FROM reservation
             WHERE idBook = ? AND status = 1
         `;
         const reservations = await new Promise((resolve, reject) => {
-            connection.query(query, [idBook], (error, results) => {
+            connection.query(reservationQuery, [idBook], (error, results) => {
                 if (error) {
                     reject(error);
                 } else {
@@ -149,39 +231,28 @@ app.get('/api/books/reserved-dates/:idBook', async (req, res) => {
             });
         });
 
-        // Requête pour récupérer la quantité de livres disponibles
-        const quantityQuery = `
-            SELECT quantity
-            FROM book
-            WHERE idBook = ?
-        `;
-        const [{ quantity }] = await new Promise((resolve, reject) => {
-            connection.query(quantityQuery, [idBook], (error, results) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(results);
-                }
-            });
-        });
-
-        // Traitement des réservations pour générer les dates réservées
+        // Création d'une map pour compter les réservations par date
         const dateCountMap = new Map();
+
         reservations.forEach((reservation) => {
             let currentDate = moment(reservation.reservationStartDate);
             const endDate = moment(reservation.reservationEndDate);
-            while (currentDate <= endDate) {
-                const dateString = currentDate.format('YYYY MM DD');
+            while (currentDate.isSameOrBefore(endDate)) {
+                const dateString = currentDate.format('YYYY-MM-DD');
                 dateCountMap.set(dateString, (dateCountMap.get(dateString) || 0) + 1);
-                currentDate.add(1, 'day');
+                currentDate.add(1, 'days');
             }
         });
 
-        // Envoi des dates réservées et de la quantité disponible en réponse
-        res.status(200).json({
-            reservedDates: Array.from(dateCountMap),
-            availableQuantity: quantity - reservations.length
+        // Filtrer les dates bloquées en fonction de la quantité de livres disponibles
+        const blockedDates = [];
+        dateCountMap.forEach((count, date) => {
+            if (count >= quantity) {
+                blockedDates.push(date);
+            }
         });
+
+        res.status(200).json(blockedDates);
     } catch (error) {
         console.error("Erreur lors de la récupération des dates réservées :", error);
         res.status(500).json({ message: "Erreur lors de la récupération des dates réservées" });
@@ -275,6 +346,51 @@ app.get('/getUserID', (req, res) => {
     const userID = req.user.idUser;
     res.json({ userID });
 });
+
+module.exports = {
+    jwtSecret: ''
+};
+
+app.get('/verify-email', (req, res) => {
+    const { token } = req.query;
+
+    if (!token) {
+        return res.status(400).send({ message: "Token manquant." });
+    }
+
+    jwt.verify(token, jwtSecret, (err, decoded) => {
+        if (err) {
+            return res.status(400).send({ message: "Token invalide ou expiré." });
+        }
+
+        const email = decoded.email;
+        const query = "UPDATE user SET emailConfirm = 1 WHERE email = ?";
+
+        connection.query(query, [email], (err, result) => {
+            if (err) {
+                return res.status(500).send("Erreur interne du serveur. Veuillez réessayer plus tard.");
+            }
+            if (result.affectedRows === 0) {
+                return res.status(400).send("Utilisateur non trouvé.");
+            }
+
+            res.send(`
+                <html>
+                    <head>
+                        <title>Validation du compte terminée</title>
+                    </head>
+                    <body>
+                        <h1>Validation du compte terminée</h1>
+                        <p>Votre compte a été validé avec succès. Vous pouvez maintenant vous connecter.</p>
+                        <a href="${siteUrl}" target="_blank">Page principale</a>
+                    </body>
+                </html>
+            `);
+        });
+    });
+});
+
+
 
 
 app.listen(3001, () =>{

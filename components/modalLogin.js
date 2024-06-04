@@ -6,7 +6,9 @@ import styles from './Modal.module.css';
 import { useState } from 'react';
 import swal from 'sweetalert';
 import axios from 'axios';
-
+require('dotenv').config();
+const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
+const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
 
 const ModalLogin = ({ show, onClose }) => {
   const [ showPassword, setShowPassword ] = useState(false);
@@ -22,7 +24,7 @@ const ModalLogin = ({ show, onClose }) => {
         password: loginPassword
       },
       withCredentials: true,
-      url: "http://localhost:3001/connexion",
+      url: `${serverUrl}/connexion`,
       timeout: 5000
     }).then((res) => {
       if(res.status === 200) {

@@ -5,6 +5,9 @@ import axios from 'axios';
 import { format, addDays } from 'date-fns';
 import swal from 'sweetalert';
 import moment from 'moment';
+require('dotenv').config();
+const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
+const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
 
 interface DatePickerComponentProps {
   idBook: string;
@@ -13,40 +16,31 @@ interface DatePickerComponentProps {
 
 const DatePickerComponent: React.FC<DatePickerComponentProps> = ({ idBook, userId }) => {
   const [startDate, setStartDate] = useState<Date | null>(null);
-  const [reservedDates, setReservedDates] = useState<Map<string, number>>(new Map());
-  //const [userId, setUserId] = useState<number | null>(null);
+  const [reservedDates, setReservedDates] = useState(new Map<string, number>());
 
   useEffect(() => {
     const fetchReservedDates = async () => {
       try {
-          const response = await axios.get('http://localhost:3001/api/reservations', {
-              params: { idBook },
-          });
-          const reservations = response.data;
+          const response = await axios.get(`${serverUrl}/api/books/reserved-dates/${idBook}`);
+          const blockedDates = response.data;
           const dateCountMap = new Map<string, number>();
-  
-          reservations.forEach((reservation: any) => {
-              let currentDate = moment(reservation.reservationStartDate);
-              const endDate = moment(reservation.reservationEndDate);
-              while (currentDate <= endDate) {
-                  const dateString = currentDate.format('YYYY-MM-DD');
-                  dateCountMap.set(dateString, (dateCountMap.get(dateString) || 0) + 1);
-                  currentDate.add(1, 'day');
-              }
+
+          blockedDates.forEach((date: string) => {
+              dateCountMap.set(date, 1);
           });
-  
+
           setReservedDates(dateCountMap);
       } catch (error) {
-          console.error("Erreur lors de la récupération des réservations :", error);
+          console.error("Erreur lors de la récupération des dates réservées :", error);
       }
-  };  
+  };
 
     fetchReservedDates();
   }, [idBook]);
 
   const fetchCurrentUserID = async () => {
     try {
-        const response = await axios.get(`http://localhost:3001/getUserID`, { withCredentials: true });
+        const response = await axios.get(`${serverUrl}/getUserID`, { withCredentials: true });
         const userId = response.data.userID; 
         return userId; 
     } catch (error) {
@@ -55,11 +49,10 @@ const DatePickerComponent: React.FC<DatePickerComponentProps> = ({ idBook, userI
     }
   };
 
-  const isDateReserved = (date: Date) => {
-    const dateString = format(date, 'yyyy-MM-dd');
-    const reservedCount = reservedDates.get(dateString) || 0;
-    return reservedCount >= 2; // Adjust based on the available quantity
-  };
+  const isDateReserved = (date: any) => {
+    const dateString = moment(date).format('YYYY-MM-DD');
+    return reservedDates.has(dateString);
+};
 
   const handleDateChange = (date: Date | null) => {
     setStartDate(date);
@@ -70,7 +63,7 @@ const DatePickerComponent: React.FC<DatePickerComponentProps> = ({ idBook, userI
       try {
         const reservationStartDate = moment(startDate).format('YYYY-MM-DD');
         console.log(userId, idBook, reservationStartDate);
-        await axios.post('http://localhost:3001/api/books/reservations', {
+        await axios.post(`${serverUrl}/api/books/reservations`, {
           userId,
           idBook: [idBook], 
           reservationStartDate,
@@ -101,9 +94,11 @@ const DatePickerComponent: React.FC<DatePickerComponentProps> = ({ idBook, userI
         maxDate={addDays(new Date(), 365)}
         filterDate={date => !isDateReserved(date)}
       />
+      <br/>
       <button className="reserve-button" onClick={handleReservation}>
         Confirmer la réservation
       </button>
+      <br/>
     </div>
   );
 };
