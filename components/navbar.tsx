@@ -105,7 +105,7 @@ export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
             </div>
           </NextLink>
         </NavbarBrand>
-        <div className={clsx("flex-grow pl-40 navbar-items", { hidden: isMenuOpen })}>
+        <div className={clsx("flex-grow pl-32 pr-20 navbar-items", { hidden: isMenuOpen })}>
           <ul className="flex gap-4">
             {siteConfig.navItems.map((item) => (
               <NavbarItem
@@ -147,12 +147,16 @@ export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
             {isProfileMenuOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-59 profile-menu">
                 <ul>
+                <Link href="/profile" legacyBehavior>
                   <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
                     Mon profil
                   </li>
+                </Link>
+                <Link href="/reservations" legacyBehavior>
                   <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
                     Mes réservations
                   </li>
+                </Link>
                   <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer" onClick={logout}>
                       Déconnexion
                   </li>

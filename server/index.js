@@ -323,10 +323,23 @@ app.post('/api/books/reservations', async (req, res) => {
 });
 
 
-
-// Make the copy of a book available again (manual, admin interface) - MODIFY !!
-app.post('/api/return', (req, res) => {
-    // REDO WITHOUT TABLE COPY : SIMPLY CHANGE QUANTITY!
+app.get('/api/user/profile/:userId', (req, res) => {
+    const userId = req.params.userId; // Get user ID from route parameter
+    const query = 'SELECT * FROM user WHERE idUser = ?'; 
+    connection.query(query, [userId], (error, results) => {
+        if (error) {
+            console.error("Erreur lors de la récupération des détails de l'utilisateur :", error);
+            res.status(500).json({ message: "Erreur lors de la récupération des détails de l'utilisateur." });
+        } else {
+            if (results.length > 0) {
+                const user = results[0];
+                // Envoyer les détails de l'utilisateur en tant que réponse JSON
+                res.status(200).json(user);
+            } else {
+                res.status(404).json({ message: "Utilisateur non trouvé." });
+            }
+        }
+    });
 });
 
 app.get('/api/current_user', (req, res) => {
@@ -336,11 +349,6 @@ app.get('/api/current_user', (req, res) => {
       res.status(401).json({ message: 'User not authenticated' });
     }
   });
-
-app.get('/api/books/available-copies', (req, res) => {
-    // REDO WITHOUT IDCOPY
-});
-
 
 app.get('/getUserID', (req, res) => {
     const userID = req.user.idUser;
@@ -390,7 +398,126 @@ app.get('/verify-email', (req, res) => {
     });
 });
 
+app.post('/api/user/change-password', (req, res) => {
+    const { userId, oldPassword, newPassword, confirmNewPassword } = req.body;
+    
+    // Verifies all necessary fields are filled
+    if (!userId || !oldPassword || !newPassword || !confirmNewPassword) {
+        return res.status(400).json({ message: 'Tous les champs sont requis.' });
+    }
 
+    // Verify if new pass and confirm new pass are the same
+    if (newPassword !== confirmNewPassword) {
+        return res.status(400).json({ message: 'Le nouveau mot de passe ne correspond pas à la confirmation.' });
+    }
+
+    // Checks if old password is correct
+    const query = 'SELECT password FROM user WHERE idUser = ?';
+    connection.query(query, [userId], (error, results) => {
+        if (error) {
+            console.error("Erreur lors de la récupération du mot de passe de l'utilisateur :", error);
+            return res.status(500).json({ message: "Erreur lors de la récupération du mot de passe de l'utilisateur." });
+        } else {
+            if (results.length > 0) {
+                const hashedPassword = results[0].password;
+                bcrypt.compare(oldPassword, hashedPassword, (err, result) => {
+                    if (err) {
+                        console.error("Erreur lors de la comparaison des mots de passe :", err);
+                        return res.status(500).json({ message: "Erreur lors de la comparaison des mots de passe." });
+                    }
+                    if (!result) {
+                        return res.status(401).json({ message: "L'ancien mot de passe est incorrect." });
+                    }
+                    // Si l'ancien mot de passe est correct, hacher le nouveau mot de passe et le mettre à jour dans la base de données
+                    bcrypt.hash(newPassword, 10, (err, hashedNewPassword) => {
+                        if (err) {
+                            console.error("Erreur lors du hachage du nouveau mot de passe :", err);
+                            return res.status(500).json({ message: "Erreur lors du hachage du nouveau mot de passe." });
+                        }
+                        const updateQuery = 'UPDATE user SET password = ? WHERE idUser = ?';
+                        connection.query(updateQuery, [hashedNewPassword, userId], (error) => {
+                            if (error) {
+                                console.error("Erreur lors de la mise à jour du mot de passe :", error);
+                                return res.status(500).json({ message: "Erreur lors de la mise à jour du mot de passe." });
+                            }
+                            return res.status(200).json({ message: "Le mot de passe a été mis à jour avec succès." });
+                        });
+                    });
+                });
+            } else {
+                return res.status(404).json({ message: "Utilisateur non trouvé." });
+            }
+        }
+    });
+});
+
+// POST request to resend verification email
+app.post('/resend-verification-email', async (req, res) => {
+    const { email } = req.body;
+
+    // Create verification token
+    const token = jwt.sign({ email }, jwtSecret, { expiresIn: '1d' });
+
+    // Send verification email
+    const mailOptions = {
+        from: 'bibliotech.assist@gmail.com',
+        to: email,
+        subject: 'BiblioTech - Activez votre compte',
+        text: `Merci pour votre inscription! Merci de valider votre mail en cliquant sur le lien suivant : ${serverUrl}/verify-email?token=${token}`
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        res.send({ message: "Email de vérification renvoyé avec succès." });
+    } catch (emailErr) {
+        console.error('Error sending email:', emailErr);
+        res.status(500).send({ message: "Erreur lors de l'envoi de l'email de vérification." });
+    }
+});
+
+// Ajouter cette route pour récupérer la liste des réservations de l'utilisateur
+app.get('/api/user/reservations', (req, res) => {
+    const userId = req.user.idUser;
+    const query = 'SELECT * FROM reservation WHERE userId = ? AND status = 1'; // Only retrieve active reservations
+    connection.query(query, [userId], (error, results) => {
+        if (error) {
+            console.error("Erreur lors de la récupération des réservations de l'utilisateur :", error);
+            res.status(500).json({ message: "Erreur lors de la récupération des réservations de l'utilisateur." });
+        } else {
+            res.status(200).json(results);
+        }
+    });
+});
+
+// Ajouter cette route pour annuler une réservation
+app.put('/api/user/reservations/:idReservation/cancel', (req, res) => {
+    const userId = req.user.idUser;
+    const idReservation = req.params.idReservation;
+
+    // Vérifier si l'utilisateur possède cette réservation
+    const checkReservationQuery = 'SELECT * FROM reservation WHERE idReservation = ? AND userId = ? AND status = 1'; // Check if reservation exists and is active
+    connection.query(checkReservationQuery, [idReservation, userId], (error, results) => {
+        if (error) {
+            console.error("Erreur lors de la vérification de la réservation de l'utilisateur :", error);
+            res.status(500).json({ message: "Erreur lors de la vérification de la réservation de l'utilisateur." });
+        } else {
+            if (results.length === 0) {
+                return res.status(404).json({ message: "Réservation non trouvée ou vous n'avez pas la permission d'annuler cette réservation." });
+            }
+
+            // Mettre à jour le statut de la réservation à 0 pour l'annuler
+            const cancelReservationQuery = 'UPDATE reservation SET status = 0 WHERE idReservation = ?';
+            connection.query(cancelReservationQuery, [idReservation], (error) => {
+                if (error) {
+                    console.error("Erreur lors de l'annulation de la réservation :", error);
+                    res.status(500).json({ message: "Erreur lors de l'annulation de la réservation." });
+                } else {
+                    res.status(200).json({ message: "Réservation annulée avec succès." });
+                }
+            });
+        }
+    });
+});
 
 
 app.listen(3001, () =>{

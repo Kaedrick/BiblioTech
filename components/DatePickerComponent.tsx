@@ -75,7 +75,8 @@ const DatePickerComponent: React.FC<DatePickerComponentProps> = ({ idBook, userI
         setReservedDates(updatedDates);
       } catch (error) {
         console.error("Erreur lors de la réservation :", error);
-        swal('Erreur', 'Erreur lors de la réservation', 'error');
+        swal('Erreur', 'Erreur lors de la réservation. Le livre est peut-être hors de stock.', 'error');
+        console.log(error);
       }
     }
   };

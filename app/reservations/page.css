@@ -1,0 +1,39 @@
+.reservations-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.reservations-container h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.reservations-container ul {
+  list-style: none;
+  padding: 0;
+}
+
+.reservations-container li {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.reservations-container li p {
+  margin: 0;
+}
+
+.reservations-container button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.reservations-container button:hover {
+  background-color: #c82333;
+}

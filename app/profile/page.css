@@ -1,0 +1,105 @@
+.profileContainer {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .userDetails {
+    margin-bottom: 20px;
+  }
+  
+  .warning {
+    background-color: #ffeeba;
+    border: 1px solid #ffc107;
+    padding: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .passwordChange {
+    border: 1px solid #ddd;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .passwordChange h3 {
+    margin-top: 0;
+  }
+  
+  .passwordChange input {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px;
+  }
+  
+  .error {
+    color: red;
+    margin-top: 5px;
+  }
+  
+  .userDetails p {
+  margin: 5px 0;
+}
+
+.userDetails p:first-child {
+  font-weight: bold;
+}
+
+.userDetails p:last-child {
+  color: #6c757d;
+}
+
+.sendEmail {
+    color:blue;
+}
+
+.passwordChangeTitle {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.showPasswordsButton {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.showPasswordsButton:hover {
+  background-color: #0056b3;
+}
+
+.passwordChange form div {
+  margin-bottom: 10px;
+}
+
+.passwordChange form div label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.passwordChange form div input {
+  padding: 8px;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.passwordChange form button {
+  background-color: #28a745;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.passwordChange form button:hover {
+  background-color: #218838;
+}
+
