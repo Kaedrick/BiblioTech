@@ -12,7 +12,7 @@
 	"server": "nodemon server/index.js",
 	
 		
-	"test": "jest",
+	"test": "cross-env NODE_ENV=test jest",
 	
 		
 	"dev": "next dev",
@@ -29,6 +29,12 @@
 	},
 	
 	"dependencies": {
+	
+		
+	"@babel/plugin-syntax-jsx": "^7.24.7",
+	
+		
+	"@babel/preset-react": "^7.24.7",
 	
 		
 	"@nextui-org/button": "^2.0.31",
@@ -103,7 +109,13 @@
 	"cors": "^2.8.5",
 	
 		
+	"csurf": "^1.11.0",
+	
+		
 	"date-fns": "^3.6.0",
+	
+		
+	"dompurify": "^3.1.5",
 	
 		
 	"dotenv": "^16.4.5",
@@ -209,6 +221,9 @@
 	"@testing-library/jest-dom": "^6.4.6",
 	
 		
+	"@types/dompurify": "^3.0.5",
+	
+		
 	"@types/express": "^4.17.21",
 	
 		
@@ -216,6 +231,9 @@
 	
 		
 	"babel-jest": "^29.7.0",
+	
+		
+	"cross-env": "^7.0.3",
 	
 		
 	"jest": "^29.7.0",

@@ -4,6 +4,7 @@ import { AxiosError } from 'axios';
 import axios from 'axios';
 import './page.css';
 import swal from 'sweetalert';
+import DOMPurify from 'dompurify';
 require('dotenv').config();
 const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
 const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
@@ -19,6 +20,9 @@ const Profile = () => {
   const passRegex = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*\W)(?!.* ).{8,32}$/;
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [remainingTime, setRemainingTime] = useState(0);
+
+  const csrfCookie = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN'));
+  const csrfToken = csrfCookie ? csrfCookie.split('=')[1] : null;
 
   const fetchUserID = async () => {
     try {
@@ -52,9 +56,13 @@ const Profile = () => {
   try {
     const response = await axios.post(`${serverUrl}/api/user/change-password`, {
       userId,
-      oldPassword,
-      newPassword,
-      confirmNewPassword
+      oldPassword: DOMPurify.sanitize(oldPassword),
+      newPassword: DOMPurify.sanitize(newPassword),
+      confirmNewPassword: DOMPurify.sanitize(confirmNewPassword)
+    }, {
+      headers: {
+        'X-CSRF-TOKEN': csrfToken
+      }
     });
     console.log('Réponse du serveur:', response.data);
     swal('Information', 'Mot de passe changé avec succès', 'success');
@@ -110,7 +118,11 @@ const resendVerificationEmail = async () => {
   setIsSendingEmail(true);
 
     try {
-        const response = await axios.post(`${serverUrl}/resend-verification-email`, { email: user.email });
+        const response = await axios.post(`${serverUrl}/resend-verification-email`, { email: user.email }, {
+          headers: {
+            'X-CSRF-TOKEN': csrfToken
+          }
+        });
         swal("Succès", response.data.message, "success");
 
         // Starts 60s timer
@@ -178,11 +190,11 @@ const resendVerificationEmail = async () => {
               </div>
               <div>
                   <label htmlFor="newPassword">Nouveau mot de passe:</label>
-                  <input type={showPasswords ? 'text' : 'password'} id="newPassword" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                  <input type={showPasswords ? 'text' : 'password'} id="newPassword" value={newPassword} onChange={(e) => setNewPassword(DOMPurify.sanitize(e.target.value))} required />
               </div>
               <div>
                   <label htmlFor="confirmNewPassword">Confirmer le nouveau mot de passe:</label>
-                  <input type={showPasswords ? 'text' : 'password'} id="confirmNewPassword" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} required />
+                  <input type={showPasswords ? 'text' : 'password'} id="confirmNewPassword" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(DOMPurify.sanitize(e.target.value))} required />
               </div>
               <button type="submit">Changer le mot de passe</button>
           </form>

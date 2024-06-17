@@ -1,5 +1,5 @@
 const request = require('supertest');
-const app = require('../../server/app'); 
+const app = require('../../server/app_test'); // Import the test version of the routes (no CSRF check, otherwise blocks)
 
 describe('POST /connexion', () => {
   it('Should authenticate user with right credentials', async () => {

@@ -18,6 +18,7 @@ import { Logo } from "@/components/icons";
 import { siteConfig } from "@/config/site";
 import { usePathname } from 'next/navigation';
 import axios from 'axios';
+import DOMPurify from 'dompurify';
 import "./../styles/navbar.css";
 require('dotenv').config();
 const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
@@ -34,7 +35,6 @@ export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
     setIsProfileMenuOpen(!isProfileMenuOpen);
   };
   
-
   useEffect(() => {
     const checkIfLoggedIn = () => {
       axios.get(`${serverUrl}/check-auth`, { withCredentials: true })
@@ -74,13 +74,22 @@ export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
     window.addEventListener('resize', () => {setIsMenuOpen(false)});
   }
 
+  const getCsrfToken = () => {
+    const csrfCookie = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN'));
+    return csrfCookie ? csrfCookie.split('=')[1] : null;
+  }
+
   const logout = () => {
-    console.log("test");
+    const csrfToken = getCsrfToken();
+
     axios({
       method: "post",
       withCredentials: true,
       url: `${serverUrl}/logout`,
-      timeout: 5000
+      timeout: 5000,
+      headers: {
+        'CSRF-Token': csrfToken
+      }
     }).then((res) => {
       if(res.status === 200) {
         console.log("OK");
@@ -112,8 +121,8 @@ export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
               key={item.href}
               className={pathname === item.href ? 'active-tab' : ''}
             >
-                <NextLink href={item.href}>
-                  {item.label}
+                <NextLink href={DOMPurify.sanitize(item.href)}>
+                  {DOMPurify.sanitize(item.label)}
                 </NextLink>
               </NavbarItem>
             ))}
@@ -177,8 +186,8 @@ export const Navbar = function ({ onOpenModal } : {onOpenModal: () => void}) {
         <NavbarMenu className="lg:hidden">
           {siteConfig.navItems.map((item) => (
             <NavbarMenuItem key={item.href}>
-              <NextLink href={item.href}>
-                {item.label}
+              <NextLink href={DOMPurify.sanitize(item.href)}>
+                {DOMPurify.sanitize(item.label)}
               </NextLink>
             </NavbarMenuItem>
           ))}

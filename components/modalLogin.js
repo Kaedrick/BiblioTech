@@ -6,6 +6,7 @@ import styles from './Modal.module.css';
 import { useState } from 'react';
 import swal from 'sweetalert';
 import axios from 'axios';
+import DOMPurify from 'dompurify';
 require('dotenv').config();
 const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
 const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
@@ -15,35 +16,46 @@ const ModalLogin = ({ show, onClose }) => {
   const [ loginEmail, setLoginEmail ] = useState('');
   const [ loginPassword, setLoginPassword ] = useState('');
 
+  const getCsrfToken = () => {
+    const csrfCookie = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN'));
+    return csrfCookie ? csrfCookie.split('=')[1] : null;
+  }
+
   const login = (e) => {
     e.preventDefault(); // Keeps page from refreshing
+
+    const csrfToken = getCsrfToken();
+
     axios({
       method: "post",
-      data:{
-        email: loginEmail,
-        password: loginPassword
+      data: {
+        email: DOMPurify.sanitize(loginEmail),
+        password: DOMPurify.sanitize(loginPassword)
       },
       withCredentials: true,
       url: `${serverUrl}/connexion`,
-      timeout: 5000
+      timeout: 5000,
+      headers: {
+        'CSRF-Token': csrfToken
+      }
     }).then((res) => {
-      if(res.status === 200) {
-        swal("Succès", "Authentification réussie.", "success")
+      if (res.status === 200) {
+        swal("Succès", "Authentification réussie.", "success");
         window.location.reload();
       }
     }).catch((err) => {
       if (err.response) {
-          if (err.response.status === 401) {
-              swal("Erreur", "Adresse e-mail incorrecte.", "error");
-          } else if (err.response.status === 402) {
-              swal("Erreur", "Mot de passe incorrect.", "error");
-          } else {
+        if (err.response.status === 401) {
+          swal("Erreur", "Adresse e-mail incorrecte.", "error");
+        } else if (err.response.status === 402) {
+          swal("Erreur", "Mot de passe incorrect.", "error");
+        } else {
           console.log(err);
           swal("Erreur", "Erreur de connexion au serveur.", "error");
-      };
-    }
-  })
-};
+        }
+      }
+    });
+  };
   
   const checkboxChange = () => {
     setShowPassword(switchShowPassword => !switchShowPassword);
@@ -60,7 +72,15 @@ const ModalLogin = ({ show, onClose }) => {
         <h2>Connectez-vous</h2>
         <form className={styles.modalForm} method='post'>
           <label htmlFor="email" className={styles.modalLabel}>E-mail</label>
-          <input type="email" id="email" name="email" placeholder="Email" required className={styles.modalInput} onChange={e => setLoginEmail(e.target.value)}/>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            placeholder="Email" 
+            required 
+            className={styles.modalInput} 
+            onChange={e => setLoginEmail(e.target.value)}
+          />
 
           <label htmlFor="password" className={styles.modalLabel}>Mot de passe</label>
           <input 
@@ -71,7 +91,7 @@ const ModalLogin = ({ show, onClose }) => {
             required 
             className={styles.modalInput} 
             onChange={e => setLoginPassword(e.target.value)}
-            />
+          />
 
           <div className={styles.modalCheckbox}>
             <input 
@@ -79,8 +99,7 @@ const ModalLogin = ({ show, onClose }) => {
               id="showPassword" 
               checked={showPassword}
               onChange={checkboxChange}
-              />
-            
+            />
             <label htmlFor="showPassword">Afficher le mot de passe</label>
           </div>
 

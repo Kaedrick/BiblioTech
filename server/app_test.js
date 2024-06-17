@@ -5,14 +5,14 @@ const passport = require('passport');
 const expressSession = require('express-session');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
+require('dotenv').config();
+
 const app = express();
 const connection = require('./database.js'); 
 const { addDays: addDaysDateFns } = require('date-fns');
 const moment = require('moment');
-const jwt = require('jsonwebtoken');
-const csrf = require('csurf');
-const nodemailer = require('nodemailer');
-require('dotenv').config();
 const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
 const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
 
@@ -26,9 +26,6 @@ app.use(cors({
 }));
 
 app.use(cookieParser('mySecretKey'));
-
-const csrfProtection = csrf({ cookie: true });
-app.use(csrfProtection);
 app.use(passport.initialize());
 app.use(passport.session());
 require("./passportConfig")(passport);
@@ -44,16 +41,11 @@ const transporter = nodemailer.createTransport({
 
 const jwtSecret = 'jwtSecretK3y0910!'; 
 
-app.use((req, res, next) => {
-    res.cookie('XSRF-TOKEN', req.csrfToken());
-    next();
-});
-
 app.get('/inscription', checkNotAuthenticated, (req, res) => {
     res.render('inscription');
 });
 
-app.post('/inscription', csrfProtection, checkNotAuthenticated, async (req, res) => {
+app.post('/inscription', checkNotAuthenticated, async (req, res) => {
     const email = req.body.email;
     const password = req.body.password;
     const firstname = req.body.firstname;
@@ -104,7 +96,7 @@ app.get('/connexion', checkNotAuthenticated, (req, res) => {
     res.render('connexion'); 
 });
 
-app.post('/connexion', csrfProtection, checkNotAuthenticated, (req, res, next) => {
+app.post('/connexion', checkNotAuthenticated, (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
         if(err) {return console.log(err);}
         if(!user) {
@@ -169,7 +161,7 @@ app.get('/check-conditions', (req, res) => {
 });
 
 
-app.post('/logout', csrfProtection, (req, res, next) => {
+app.post('/logout', (req, res, next) => {
     req.logout((err) => {
       if (err) { return next(err); }
       res.status(200).send('Déconnecté avec succès.');
@@ -267,7 +259,7 @@ app.get('/api/books/reserved-dates/:idBook', async (req, res) => {
     }
 });
 
-app.post('/api/books/reservations', csrfProtection, async (req, res) => {
+app.post('/api/books/reservations', async (req, res) => {
     const { userId, idBook, reservationStartDate } = req.body;
     const reservationEndDate = moment(reservationStartDate).add(21, 'days').format('YYYY-MM-DD'); // Adds 21 days from the start of reservation date
 
@@ -329,7 +321,6 @@ app.post('/api/books/reservations', csrfProtection, async (req, res) => {
         res.status(500).json({ message: "Erreur lors de la création de la réservation." });
     }
 });
-
 
 app.get('/api/user/profile/:userId', (req, res) => {
     const userId = req.params.userId; // Get user ID from parameter
@@ -406,7 +397,7 @@ app.get('/verify-email', (req, res) => {
     });
 });
 
-app.post('/api/user/change-password', csrfProtection, (req, res) => {
+app.post('/api/user/change-password', (req, res) => {
     const { userId, oldPassword, newPassword, confirmNewPassword } = req.body;
     
     // Verifies all necessary fields are filled
@@ -460,7 +451,7 @@ app.post('/api/user/change-password', csrfProtection, (req, res) => {
 });
 
 // POST request to resend verification email
-app.post('/resend-verification-email', csrfProtection, async (req, res) => {
+app.post('/resend-verification-email', async (req, res) => {
     const { email } = req.body;
 
     // Create verification token
@@ -498,7 +489,7 @@ app.get('/api/user/reservations', (req, res) => {
 });
 
 // Cancel a user's reservation
-app.put('/api/user/reservations/:idReservation/cancel', csrfProtection, (req, res) => {
+app.put('/api/user/reservations/:idReservation/cancel', (req, res) => {
     const userId = req.user.idUser;
     const idReservation = req.params.idReservation;
 
@@ -510,7 +501,7 @@ app.put('/api/user/reservations/:idReservation/cancel', csrfProtection, (req, re
             res.status(500).json({ message: "Erreur lors de la vérification de la réservation de l'utilisateur." });
         } else {
             if (results.length === 0) {
-                return res.status(404).json({ message: "Réservation non trouvée." });
+                return res.status(404).json({ message: "Réservation non trouvée ou vous n'avez pas la permission d'annuler cette réservation." });
             }
 
             // Changes reservation status to 0 to cancel it
@@ -527,9 +518,10 @@ app.put('/api/user/reservations/:idReservation/cancel', csrfProtection, (req, re
     });
 });
 
-
-// app.listen(3001, () =>{
-//     console.log("Server started on port 3001");
-// });
+// Start the server
+app.listen(3001, () => {
+    console.log("Server started on port 3001");
+});
 
 module.exports = app;
+
