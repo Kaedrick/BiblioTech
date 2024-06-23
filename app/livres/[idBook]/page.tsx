@@ -1,4 +1,3 @@
-// pages/livres/[idBook].tsx
 "use client";
 import { useParams } from 'next/navigation';
 import axios from 'axios';
@@ -8,6 +7,7 @@ import './BookDetails.css';
 require('dotenv').config();
 const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
 const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
+
 
 export default function LivresDetails() {
     const { idBook } = useParams();

@@ -37,70 +37,70 @@
 	"@babel/preset-react": "^7.24.7",
 	
 		
-	"@nextui-org/button": "^2.0.31",
+	"@nextui-org/button": "^2.0.34",
 	
 		
-	"@nextui-org/card": "^2.0.28",
+	"@nextui-org/card": "^2.0.31",
 	
 		
-	"@nextui-org/code": "^2.0.27",
+	"@nextui-org/code": "^2.0.29",
 	
 		
-	"@nextui-org/input": "^2.1.21",
+	"@nextui-org/input": "^2.2.2",
 	
 		
-	"@nextui-org/kbd": "^2.0.28",
+	"@nextui-org/kbd": "^2.0.30",
 	
 		
-	"@nextui-org/link": "^2.0.29",
+	"@nextui-org/link": "^2.0.32",
 	
 		
-	"@nextui-org/navbar": "^2.0.30",
+	"@nextui-org/navbar": "^2.0.33",
 	
 		
-	"@nextui-org/react": "^2.3.6",
+	"@nextui-org/react": "^2.4.2",
 	
 		
-	"@nextui-org/snippet": "^2.0.35",
+	"@nextui-org/snippet": "^2.0.38",
 	
 		
-	"@nextui-org/switch": "^2.0.28",
+	"@nextui-org/switch": "^2.0.31",
 	
 		
-	"@nextui-org/system": "2.1.0",
+	"@nextui-org/system": "2.2.2",
 	
 		
-	"@nextui-org/theme": "2.2.0",
+	"@nextui-org/theme": "2.2.6",
 	
 		
-	"@react-aria/ssr": "^3.9.2",
+	"@react-aria/ssr": "^3.9.4",
 	
 		
-	"@react-aria/visually-hidden": "^3.8.10",
+	"@react-aria/visually-hidden": "^3.8.12",
 	
 		
-	"@types/node": "20.5.7",
+	"@types/node": "20.14.8",
 	
 		
-	"@types/react": "18.2.21",
+	"@types/react": "18.3.3",
 	
 		
 	"@types/react-datepicker": "^6.2.0",
 	
 		
-	"@types/react-dom": "18.2.7",
+	"@types/react-dom": "18.3.0",
 	
 		
 	"autoprefixer": "10.4.19",
 	
 		
-	"axios": "^1.7.1",
+	"axios": "^1.7.2",
 	
 		
 	"bcrypt": "^5.1.1",
 	
 		
-	"clsx": "^2.0.0",
+	"clsx": "^2.1.1",
 	
 		
 	"cookie-parser": "^1.4.6",
@@ -121,10 +121,7 @@
 	"dotenv": "^16.4.5",
 	
 		
-	"eslint": "^8.48.0",
-	
-		
-	"eslint-config-next": "14.2.1",
+	"eslint-config-next": "14.2.4",
 	
 		
 	"express": "^4.19.2",
@@ -133,10 +130,13 @@
 	"express-session": "^1.18.0",
 	
 		
-	"framer-motion": "^11.1.1",
+	"framer-motion": "^11.2.11",
 	
 		
-	"intl-messageformat": "^10.5.0",
+	"intl-messageformat": "^10.5.14",
+	
+		
+	"js-cookie": "^3.0.5",
 	
 		
 	"jsonwebtoken": "^9.0.2",
@@ -148,25 +148,25 @@
 	"mysql": "^2.18.1",
 	
 		
-	"mysql2": "^3.9.7",
+	"mysql2": "^3.10.1",
 	
 		
 	"net": "^1.0.2",
 	
 		
-	"next": "^14.2.3",
+	"next": "^14.2.4",
 	
 		
-	"next-themes": "^0.2.1",
+	"next-themes": "^0.3.0",
 	
 		
 	"node-cron": "^3.0.3",
 	
 		
-	"nodemailer": "^6.9.13",
+	"nodemailer": "^6.9.14",
 	
 		
-	"nodemon": "^3.1.0",
+	"nodemon": "^3.1.4",
 	
 		
 	"passport": "^0.7.0",
@@ -181,10 +181,10 @@
 	"react": "^18.3.1",
 	
 		
-	"react-datepicker": "^6.9.0",
+	"react-datepicker": "^7.1.0",
 	
 		
-	"react-dom": "^18.2.0",
+	"react-dom": "^18.3.1",
 	
 		
 	"react-router-dom": "^6.23.1",
@@ -193,16 +193,16 @@
 	"sweetalert": "^2.1.2",
 	
 		
-	"tailwind-variants": "^0.1.20",
+	"tailwind-variants": "^0.2.1",
 	
 		
-	"tailwindcss": "3.4.3",
+	"tailwindcss": "3.4.4",
 	
 		
 	"tls": "^0.0.1",
 	
 		
-	"typescript": "5.0.4"
+	"typescript": "5.5.2"
 	
 	},
 	
@@ -230,6 +230,9 @@
 	"@types/jest": "^29.5.12",
 	
 		
+	"@types/js-cookie": "^3.0.6",
+	
+		
 	"babel-jest": "^29.7.0",
 	
 		
@@ -245,7 +248,7 @@
 	"supertest": "^7.0.0",
 	
 		
-	"ts-jest": "^29.1.4"
+	"ts-jest": "^29.1.5"
 	
 	}
 }

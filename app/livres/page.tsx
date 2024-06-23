@@ -2,7 +2,6 @@
 
 import { title, subtitle } from "@/components/primitives";
 import React from "react";
-//import {Card, CardHeader, CardBody} from "@nextui-org/card";
 import { useState, useEffect } from "react";
 import {Card, CardHeader, CardBody, CardFooter, Image, Button, Divider} from '@nextui-org/react';
 import { BrowserRouter as Router, Route, Link } from "react-router-dom";
@@ -16,14 +15,23 @@ function truncateDescription(description:string | undefined): string {
 	if(!description) return ""
 	const words = description.split(' ');
 	const truncatedWords = words.slice(0, 30); 
-	const truncatedDescription = truncatedWords.join(' ');  // Show only first 30 characters from book description
+	const truncatedDescription = truncatedWords.join(' ');  // Show only first 30 words from book description
 	return truncatedDescription;
+}
+
+function truncateLongTitle(title: string | undefined): string {
+	if(!title) return ""
+
+	if(title.length > 35) {
+		return title.slice(0, 35) + "...";
+	} else {
+		return title;
+	}
 }
 
 export default function Livres() {
     const [book, setBook] = useState<any[]>([]);
 	const [startIndex, setStartIndex] = useState(0);
-	const [error, setError] = useState(null);
 	const itemPerPage = 10;
 
 	const handleClickLoadMore = () => {
@@ -37,8 +45,7 @@ export default function Livres() {
 			setBook(response.data);
 		  } catch (error: any) {
 			console.error("Erreur lors de la récupération des livres :", error);
-			setError(error.message);
-		  }
+		  } 
 		};
 	
 		fetchBooks();
@@ -61,7 +68,7 @@ export default function Livres() {
 					<Card isFooterBlurred className="h-[400px]" key={index}>
 
 					<CardHeader className="card-header absolute z-10 flex-col items-start">
-						<h4 className="title-text text-black font-medium text-2xl">{book.title}</h4>
+						<h4 className="title-text text-black font-medium text-2xl">{truncateLongTitle(book.title)}</h4>
 					</CardHeader>
 
 					<Divider className="title-divider my-10" />

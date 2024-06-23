@@ -1,60 +1,142 @@
-// import React, { useState, useEffect } from 'react';
-// import axios from 'axios';
-// import './page.css';
+"use client";
 
-// interface Reservation {
-//     idReservation: number;
-//     userId: number;
-//     reservationStartDate: Date;
-//     reservationEndDate: Date;
-//     // Autres propriétés
-// }
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import './page.css';
+import swal from "sweetalert";
+require('dotenv').config();
+const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
+const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
+import Cookies from 'js-cookie';
+import Link from 'next/link';
+axios.defaults.withCredentials = true;
+const csrfToken = Cookies.get('XSRF-TOKEN');
+
+const ReservationsPage = () => {
+  const [reservations, setReservations] = useState<any[]>([]);
+  const [userId, setUserId] = useState<number>(); 
+
+  useEffect(() => {
+    const fetchUserId = async () => { // Fetch userID at page load
+        try {
+            const response = await axios.get(`${serverUrl}/getUserID`, {
+                withCredentials: true
+            });
+            const userId = response.data.userID;
+            return userId;
+        } catch (error) {
+            console.error('Error fetching user ID:', error);
+        }
+    };
+    const loadReservations = async () => { 
+        setUserId(await fetchUserId());
+        fetchReservations(userId);
+    };
+
+    loadReservations();
+  }, [userId]);
+
+  const fetchReservations = async (userId: any) => {
+    try {
+        const response = await axios.get(`${serverUrl}/api/user/reservations`, {
+            params: { userId }
+        });
+        setReservations(response.data);
+        
+    } catch (error) {
+        console.error('Erreur lors du chargement des réservations :', error);
+    }
+};
+
+const handleCancelReservation = async (reservationId: any) => {
+    swal({
+        title: "Êtes-vous sûr?",
+        text: "Voulez-vous vraiment annuler cette réservation?",
+        icon: "warning",
+        buttons: {
+            cancel: {
+                text: "Non, garder la réservation",
+                value: false,
+                visible: true,
+                className: "",
+                closeModal: true,
+            },
+            confirm: {
+                text: "Oui, annuler la réservation",
+                value: true,
+                visible: true,
+                className: "btn-danger",
+                closeModal: true
+            }
+        },
+    }).then(async (willDelete) => {
+        if (willDelete) {
+            try {
+                await axios.put(`${serverUrl}/api/user/reservations/${reservationId}/cancel`,{ userId },
+                    {
+                        headers: {
+                            "X-CSRF-TOKEN": csrfToken,
+                        },
+                        withCredentials: true,
+                    }
+                );
+                // Actualise la liste après l'annulation de la réservation
+                fetchReservations(userId);
+                swal("Succès", "La réservation a été annulée avec succès.", "success");
+            } catch (error) {
+                console.error('Erreur lors de l\'annulation de la réservation :', error);
+                swal("Erreur", "Erreur lors de l'annulation de la réservation.", "error");
+            }
+        } else {
+            swal("Annulation", "Votre réservation est toujours active.", "info");
+        }
+    });
+};
 
 
-// const ReservationsPage = () => {
-//   const [reservations, setReservations] = useState([]);
+  return (
+    <div className="table-container">
+      <h1>Mes réservations</h1>
+      {(reservations.length === 0) ? (
+        <p>Vous n'avez aucune réservation pour le moment.</p>
+      ) : (
+        <table className="reservations-table">
+          <thead>
+            <tr>
+              <th>Livre</th>
+              <th>Date de début</th>
+              <th>Date de fin</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reservations.map((reservation) => (
+              <tr key={reservation.idReservation}>
+                <td>
+                  <Link legacyBehavior href={`/livres/${reservation.bookId}`}>
+                    <a className='bookLink'>{reservation.bookTitle}</a>
+                  </Link>
+                  <Link legacyBehavior href={`/livres/${reservation.bookId}`}>
+                    <img className='img' src={reservation.bookImage} alt={reservation.bookTitle} style={{ width: '100px', height: '150px', marginTop: '10px' }} />
+                  </Link>
+                </td>
+                <td>{reservation.reservationStartDate.split('T')[0]}</td>
+                <td>{reservation.reservationEndDate.split('T')[0]}</td>
+                <td>
+                  <button 
+                    className="button-cancel" 
+                    onClick={() => handleCancelReservation(reservation.idReservation)}
+                  >
+                    Annuler
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+};
 
-//   useEffect(() => {
-//     loadReservations(); // Loads reservations at page load
-//   }, []);
-
-//   const loadReservations = async () => {
-//     try {
-//       const response = await axios.get('/api/user/reservations');
-//       setReservations(response.data);
-//     } catch (error) {
-//       console.error('Erreur lors du chargement des réservations :', error);
-//     }
-//   };
-
-//   const handleCancelReservation = async (reservationId: any) => {
-//     try {
-//       await axios.post(`/api/user/reservations/${reservationId}/cancel`);
-//       // Refreshes list after canceling a reservation
-//       loadReservations();
-//     } catch (error) {
-//       console.error('Erreur lors de l\'annulation de la réservation :', error);
-//     }
-//   };
-
-//   return (
-//     <div className="reservations-container">
-//       <h1>Mes réservations</h1>
-//       {reservations.length === 0 ? (
-//         <p>Vous n'avez aucune réservation pour le moment.</p>
-//       ) : (
-//         <ul>
-//           {reservations.map((reservation) => (
-//             <li key={reservation.idReservation}>
-//               <p>Date de début : {reservation.reservationStartDate}</p>
-//               <p>Date de fin : {reservation.reservationEndDate}</p>
-//               <button onClick={() => handleCancelReservation(reservation.idReservation)}>Annuler</button>
-//             </li>
-//           ))}
-//         </ul>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default ReservationsPage;
+export default ReservationsPage;

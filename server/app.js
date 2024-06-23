@@ -18,7 +18,10 @@ const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
 
 app.use(boddParser.json());
 app.use(boddParser.urlencoded({ extended: true }));
+
 app.use(expressSession({ secret : 'mySecretKey', resave:false, saveUninitialized: false }));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 app.use(cors({
     origin: `${siteUrl}`,
@@ -29,6 +32,7 @@ app.use(cookieParser('mySecretKey'));
 
 const csrfProtection = csrf({ cookie: true });
 app.use(csrfProtection);
+
 app.use(passport.initialize());
 app.use(passport.session());
 require("./passportConfig")(passport);
@@ -45,8 +49,12 @@ const transporter = nodemailer.createTransport({
 const jwtSecret = 'jwtSecretK3y0910!'; 
 
 app.use((req, res, next) => {
-    res.cookie('XSRF-TOKEN', req.csrfToken());
-    next();
+    try {
+        res.cookie('XSRF-TOKEN', req.csrfToken());
+        next();
+    } catch (error) {
+        next(error);
+    }
 });
 
 app.get('/inscription', checkNotAuthenticated, (req, res) => {
@@ -76,8 +84,11 @@ app.post('/inscription', csrfProtection, checkNotAuthenticated, async (req, res)
                 if (err) {
                     throw err;
                 }
-                // Create verification token
+
+                // Create verification token (for validation mail)
                 const token = jwt.sign({ email }, jwtSecret, { expiresIn: '1d' });
+                // CSRF token
+                res.cookie('XSRF-TOKEN', req.csrfToken(), { httpOnly: false, secure: false });
 
                 // Send verification email
                 const mailOptions = {
@@ -106,24 +117,29 @@ app.get('/connexion', checkNotAuthenticated, (req, res) => {
 
 app.post('/connexion', csrfProtection, checkNotAuthenticated, (req, res, next) => {
     passport.authenticate('local', (err, user, info) => {
-        if(err) {return console.log(err);}
-        if(!user) {
-            if(info && info.message === 'Invalid Email') {
+        if (err) {
+            return res.status(500).send({ message: "Erreur interne du serveur." });
+        }
+        if (!user) {
+            if (info && info.message === 'Invalid Email') {
                 return res.status(401).send('Adresse e-mail incorrecte.');
             }
-            if(info && info.message === 'Invalid Password') {
+            if (info && info.message === 'Invalid Password') {
                 return res.status(402).send('Mot de passe incorrect.');
             }
             return res.status(403).send('Erreur d\'authentification.');
         }
         // Success login
         req.login(user, (err) => {
-            if(err) { console.log(err); }
+            if (err) {
+                return res.status(500).send({ message: "Erreur interne du serveur." });
+            }
+            res.cookie('XSRF-TOKEN', req.csrfToken(), { httpOnly: false, secure: false });
             res.send("Utilisateur authentifié avec succès");
-            console.log(user);
         });
     })(req, res, next);
 });
+
 
 app.get('/getUser', (req, res) => {
     res.send(req.user);
@@ -359,8 +375,10 @@ app.get('/api/current_user', (req, res) => {
   });
 
 app.get('/getUserID', (req, res) => {
-    const userID = req.user.idUser;
-    res.json({ userID });
+    if(req.user.idUser !== null) {
+        const userID = req.user.idUser;
+        res.json({ userID });
+    } 
 });
 
 module.exports = {
@@ -485,8 +503,13 @@ app.post('/resend-verification-email', csrfProtection, async (req, res) => {
 
 // Gets user's reservations
 app.get('/api/user/reservations', (req, res) => {
-    const userId = req.user.idUser;
-    const query = 'SELECT * FROM reservation WHERE userId = ? AND status = 1'; // Only retrieve active reservations
+    const userId = req.query.userId; 
+    const query = `
+        SELECT r.*, b.title as bookTitle, b.idBook as bookId, b.image as bookImage
+        FROM reservation r
+        JOIN book b ON r.idBook = b.idBook
+        WHERE r.userId = ? AND r.status = 1
+    `; // Only retrieve active reservations and join with book table to get book title
     connection.query(query, [userId], (error, results) => {
         if (error) {
             console.error("Erreur lors de la récupération des réservations de l'utilisateur :", error);
@@ -497,9 +520,10 @@ app.get('/api/user/reservations', (req, res) => {
     });
 });
 
+
 // Cancel a user's reservation
 app.put('/api/user/reservations/:idReservation/cancel', csrfProtection, (req, res) => {
-    const userId = req.user.idUser;
+    const userId = req.body.userId; 
     const idReservation = req.params.idReservation;
 
     // Checks if user has that said reservation

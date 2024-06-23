@@ -1,0 +1,78 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.logo {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 20px auto;
+}
+
+.main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.section .text, .section .image {
+    flex: 1;
+}
+
+.section .image {
+    position: relative;
+    height: 300px;
+    margin-bottom: 20px;
+}
+
+.reverse {
+    flex-direction: column-reverse;
+}
+
+.call-to-action {
+    text-align: center;
+}
+
+.cta-button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 25px;
+    text-decoration: none;
+    font-size: 1em;
+    margin-top: 20px;
+}
+
+.cta-button:hover {
+    background-color: #0056b3;
+}
+
+@media (min-width: 768px) {
+    .section {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .reverse {
+        flex-direction: row-reverse;
+    }
+
+    .section .image {
+        margin-bottom: 0;
+        height: 400px;
+    }
+}

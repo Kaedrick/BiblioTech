@@ -1,31 +1,48 @@
-.reservations-container {
+.table-container {
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
+  color: #fff;
 }
 
-.reservations-container h1 {
+.table-container h1 {
   font-size: 24px;
   margin-bottom: 20px;
+  color: #fff;
 }
 
-.reservations-container ul {
-  list-style: none;
-  padding: 0;
+.reservations-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #fff;
 }
 
-.reservations-container li {
+.reservations-table th, .reservations-table td {
   border: 1px solid #ccc;
-  border-radius: 5px;
   padding: 10px;
-  margin-bottom: 10px;
+  text-align: left;
+  color: #fff;
 }
 
-.reservations-container li p {
-  margin: 0;
+.reservations-table th {
+  background-color: #0070f3;
+  color: #fff;
 }
 
-.reservations-container button {
+.bookLink {
+  color: #0070f3;
+  text-decoration: none;
+}
+
+.bookLink:hover {
+  text-decoration: underline;
+}
+
+.img:hover {
+  cursor: pointer;
+}
+
+.button-cancel {
   background-color: #dc3545;
   color: white;
   border: none;
@@ -34,6 +51,12 @@
   cursor: pointer;
 }
 
-.reservations-container button:hover {
+.button-cancel:hover {
   background-color: #c82333;
+}
+
+@media (max-width: 504px) {
+  .img {
+    visibility: hidden;
+  }
 }

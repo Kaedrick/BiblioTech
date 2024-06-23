@@ -8,6 +8,9 @@ import moment from 'moment';
 require('dotenv').config();
 const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
 const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
+import Cookies from 'js-cookie';
+axios.defaults.withCredentials = true;
+const csrfToken = Cookies.get('XSRF-TOKEN');
 
 interface DatePickerComponentProps {
   idBook: string;
@@ -67,6 +70,10 @@ const DatePickerComponent: React.FC<DatePickerComponentProps> = ({ idBook, userI
           userId,
           idBook: [idBook], 
           reservationStartDate,
+        }, {
+          headers: {
+            'X-CSRF-TOKEN':csrfToken,
+          }
         });
         swal('Succès', 'Réservation réussie !', 'success');
         const updatedDates = new Map(reservedDates);
