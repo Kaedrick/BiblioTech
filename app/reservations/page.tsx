@@ -1,3 +1,5 @@
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -14,33 +16,19 @@ const csrfToken = Cookies.get('XSRF-TOKEN');
 
 const ReservationsPage = () => {
   const [reservations, setReservations] = useState<any[]>([]);
-  const [userId, setUserId] = useState<number>(); 
 
   useEffect(() => {
-    const fetchUserId = async () => { // Fetch userID at page load
-        try {
-            const response = await axios.get(`${serverUrl}/getUserID`, {
-                withCredentials: true
-            });
-            const userId = response.data.userID;
-            return userId;
-        } catch (error) {
-            console.error('Error fetching user ID:', error);
-        }
-    };
+
     const loadReservations = async () => { 
-        setUserId(await fetchUserId());
-        fetchReservations(userId);
+        fetchReservations();
     };
 
     loadReservations();
-  }, [userId]);
+  }, []);
 
-  const fetchReservations = async (userId: any) => {
+  const fetchReservations = async () => {
     try {
-        const response = await axios.get(`${serverUrl}/api/user/reservations`, {
-            params: { userId }
-        });
+        const response = await axios.get(`${serverUrl}/api/user/reservations`);
         setReservations(response.data);
         
     } catch (error) {
@@ -72,7 +60,8 @@ const handleCancelReservation = async (reservationId: any) => {
     }).then(async (willDelete) => {
         if (willDelete) {
             try {
-                await axios.put(`${serverUrl}/api/user/reservations/${reservationId}/cancel`,{ userId },
+              await axios.put(`${serverUrl}/api/user/reservations/cancel/`, 
+                {idReservation: reservationId}, 
                     {
                         headers: {
                             "X-CSRF-TOKEN": csrfToken,
@@ -81,7 +70,7 @@ const handleCancelReservation = async (reservationId: any) => {
                     }
                 );
                 // Actualise la liste après l'annulation de la réservation
-                fetchReservations(userId);
+                fetchReservations();
                 swal("Succès", "La réservation a été annulée avec succès.", "success");
             } catch (error) {
                 console.error('Erreur lors de l\'annulation de la réservation :', error);

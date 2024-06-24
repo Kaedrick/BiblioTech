@@ -17,7 +17,7 @@ interface DatePickerComponentProps {
   userId: number;
 }
 
-const DatePickerComponent: React.FC<DatePickerComponentProps> = ({ idBook, userId }) => {
+const DatePickerComponent: React.FC<DatePickerComponentProps> = ({ idBook }) => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [reservedDates, setReservedDates] = useState(new Map<string, number>());
 
@@ -62,12 +62,10 @@ const DatePickerComponent: React.FC<DatePickerComponentProps> = ({ idBook, userI
   };
 
   const handleReservation = async () => {
-    if (startDate && userId) {
+    if (startDate) {
       try {
         const reservationStartDate = moment(startDate).format('YYYY-MM-DD');
-        console.log(userId, idBook, reservationStartDate);
         await axios.post(`${serverUrl}/api/books/reservations`, {
-          userId,
           idBook: [idBook], 
           reservationStartDate,
         }, {

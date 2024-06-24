@@ -29,32 +29,36 @@ const ModalLogin = ({ show, onClose }) => {
     axios({
       method: "post",
       data: {
-        email: DOMPurify.sanitize(loginEmail),
-        password: DOMPurify.sanitize(loginPassword)
+          email: DOMPurify.sanitize(loginEmail),
+          password: DOMPurify.sanitize(loginPassword)
       },
       withCredentials: true,
       url: `${serverUrl}/connexion`,
       timeout: 5000,
       headers: {
-        'CSRF-Token': csrfToken
+          'CSRF-Token': csrfToken
       }
-    }).then((res) => {
+  }).then((res) => {
       if (res.status === 200) {
-        swal("Succès", "Authentification réussie.", "success");
-        window.location.reload();
+          if (res.data.redirectUrl) {
+              window.location.href = res.data.redirectUrl;
+          } else {
+              swal("Succès", "Authentification réussie.", "success");
+              window.location.reload();
+          }
       }
-    }).catch((err) => {
+  }).catch((err) => {
       if (err.response) {
-        if (err.response.status === 401) {
-          swal("Erreur", "Adresse e-mail incorrecte.", "error");
-        } else if (err.response.status === 402) {
-          swal("Erreur", "Mot de passe incorrect.", "error");
-        } else {
-          console.log(err);
-          swal("Erreur", "Erreur de connexion au serveur.", "error");
-        }
+          if (err.response.status === 401) {
+              swal("Erreur", "Adresse e-mail incorrecte.", "error");
+          } else if (err.response.status === 402) {
+              swal("Erreur", "Mot de passe incorrect.", "error");
+          } else {
+              console.log(err);
+              swal("Erreur", "Erreur de connexion au serveur.", "error");
+          }
       }
-    });
+  });
   };
   
   const checkboxChange = () => {

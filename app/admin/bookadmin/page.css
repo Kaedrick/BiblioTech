@@ -1,0 +1,130 @@
+/* Global styles */
+.add-book-form {
+    margin-bottom: 20px;
+}
+
+.add-book-form label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.add-book-form label input,
+.add-book-form label textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+/* Book list table styles */
+.book-list-container {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.book-list {
+    width: 100%;
+    max-width: 1000px;
+    border-collapse: collapse;
+}
+
+.book-list th,
+.book-list td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: left;
+}
+
+.book-list th {
+    background-color: #0070f3;
+    color: white;
+}
+
+.book-list td {
+    background-color: #f9f9f9;
+}
+
+.book-list .book-image {
+    max-width: 50px;
+    max-height: 50px;
+}
+
+.book-list .action-buttons button {
+    margin-right: 10px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.book-list .action-buttons button.apply {
+    background-color: #28a745;
+    color: white;
+}
+
+.book-list .action-buttons button.apply:hover {
+    background-color: #218838;
+}
+
+.book-list .action-buttons button.delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+.book-list .action-buttons button.delete:hover {
+    background-color: #c82333;
+}
+
+.book-list td input,
+.book-list td textarea {
+    border: 1px solid #0070f3;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.buttons {
+    padding: 10px 20px;
+    background-color: #0070f3;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.buttons:hover {
+    background-color: #005bb5;
+}
+
+
+/* Mobile styles */
+@media (max-width: 768px) {
+    .book-list th {
+        display: none;
+    }
+
+    .book-list td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .book-list td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .book-list .action-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+}
+
+/* Additional space below the "Ajouter un livre" button */
+.add-book-form {
+    margin-bottom: 40px;
+}

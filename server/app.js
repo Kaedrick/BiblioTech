@@ -12,6 +12,7 @@ const moment = require('moment');
 const jwt = require('jsonwebtoken');
 const csrf = require('csurf');
 const nodemailer = require('nodemailer');
+const checkAdmin = require('.././app/middleware/checkAdmin');
 require('dotenv').config();
 const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
 const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
@@ -56,6 +57,13 @@ app.use((req, res, next) => {
         next(error);
     }
 });
+
+function ensureAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.status(401).send('Unauthorized');
+}
 
 app.get('/inscription', checkNotAuthenticated, (req, res) => {
     res.render('inscription');
@@ -134,11 +142,21 @@ app.post('/connexion', csrfProtection, checkNotAuthenticated, (req, res, next) =
             if (err) {
                 return res.status(500).send({ message: "Erreur interne du serveur." });
             }
+
+            // CSRF token
             res.cookie('XSRF-TOKEN', req.csrfToken(), { httpOnly: false, secure: false });
+
+            // Check if admin
+            if (user.idRole === 2) {
+                // Redirect to /admin if the user is an admin
+                return res.status(200).json({ redirectUrl: '/admin' });
+            }
+
             res.send("Utilisateur authentifié avec succès");
         });
     })(req, res, next);
 });
+
 
 
 app.get('/getUser', (req, res) => {
@@ -154,6 +172,16 @@ function checkNotAuthenticated(req, res, next) {
 
 app.get('/check-auth', (req, res) => {
     if (req.isAuthenticated()) {
+        
+        res.send({ isAuthenticated: true });
+    } else {
+        res.send({ isAuthenticated: false });
+    }
+});
+
+app.get('/check-admin', (req, res) => {
+    const userRole = req.user.idRole;
+    if (req.isAuthenticated() && userRole == 2) {
         res.send({ isAuthenticated: true });
     } else {
         res.send({ isAuthenticated: false });
@@ -161,10 +189,16 @@ app.get('/check-auth', (req, res) => {
 });
 
 app.get('/check-conditions', (req, res) => {
+    
     if (req.isAuthenticated()) {
-        const userId = req.user.idUser;
+        const userID = req.user.idUser;
+    
+        if (!userID) {
+            return res.status(400).json({ message: "User ID is missing" });
+        }
+
         const query = 'SELECT strike, verified, emailConfirm FROM user WHERE idUser = ?';
-        connection.query(query, [userId], (error, results) => {
+        connection.query(query, [userID], (error, results) => {
             if (error) {
                 return res.status(500).json({error: 'Internal server error' });
             }
@@ -195,7 +229,7 @@ app.post('/logout', csrfProtection, (req, res, next) => {
   app.get('/api/books', (req, res) => {
     const idBook = req.query.idBook;
 
-    let query = 'SELECT idBook, title, author, description, image FROM book';
+    let query = 'SELECT idBook, title, author, description, image, quantity FROM book';
     if (idBook) {
         query += ` WHERE idBook = ${idBook}`;
     }
@@ -210,11 +244,76 @@ app.post('/logout', csrfProtection, (req, res, next) => {
     });
 });
 
-function addDays(date, days) {
-    const result = new Date(date);
-    result.setDate(result.getDate() + days);
-    return result;
-}
+app.get('/api/books/:searchTerms', (req, res) => {
+    const searchTerms = req.params.searchTerms;
+
+    let query = 'SELECT idBook, title, author, description, image FROM book WHERE title LIKE ?';
+
+    connection.query(query, [searchTerms], (error, results) => {
+        if (error) {
+            console.error("Error fetching books data:", error);
+            res.status(500).json({ message: "Error fetching books data" });
+        } else {
+            res.status(200).json(results); // Send books data as JSON response
+        }
+    });
+});
+
+app.post('/api/books', csrfProtection, checkAdmin, (req, res) => {
+    const { title, author, description, image, quantity } = req.body;
+    const query = 'INSERT INTO book (title, author, description, image, quantity) VALUES (?, ?, ?, ?, ?)';
+    connection.query(query, [title, author, description, image, quantity], (error, results) => {
+        if (error) {
+            console.error("Error adding book:", error);
+            res.status(500).json({ message: "Erreur lors de l'ajout du livre" });
+        } else {
+            res.status(201).json({ message: "Livre ajouté avec succès" });
+        }
+    });
+});
+
+app.put('/api/books/:idBook', csrfProtection, checkAdmin, (req, res) => {
+    const { idBook } = req.params;
+    const { title, author, description, image, quantity } = req.body;
+    const query = 'UPDATE book SET title = ?, author = ?, description = ?, image = ?, quantity = ? WHERE idBook = ?';
+    connection.query(query, [title, author, description, image, quantity, idBook], (error, results) => {
+        if (error) {
+            console.error("Error updating book:", error);
+            res.status(500).json({ message: "Erreur lors de la modification du livre" });
+        } else {
+            res.status(200).json({ message: "Livre modifié avec succès" });
+        }
+    });
+});
+
+app.put('/api/reservations/:idReservation', csrfProtection, checkAdmin, (req, res) => {
+    const { idReservation } = req.params;
+    const { reservationStartDate, reservationEndDate } = req.body;
+    const query = 'UPDATE reservation SET reservationStartDate = ?, reservationEndDate = ? WHERE idReservation = ?';
+    connection.query(query, [reservationStartDate, reservationEndDate, idReservation], (error, results) => {
+        if (error) {
+            console.error("Error updating book:", error);
+            res.status(500).json({ message: "Erreur lors de la modification de la réservation" });
+        } else {
+            res.status(200).json({ message: "Réservation modifiée avec succès" });
+        }
+    });
+});
+
+app.delete('/api/books/:idBook', csrfProtection, checkAdmin, (req, res) => {
+    const { idBook } = req.params;
+    const query = 'DELETE FROM book WHERE idBook = ?';
+    connection.query(query, [idBook], (error, results) => {
+        if (error) {
+            console.error("Error deleting book:", error);
+            res.status(500).json({ message: "Erreur lors de la suppression du livre" });
+        } else {
+            res.status(200).json({ message: "Livre supprimé avec succès" });
+        }
+    });
+});
+
+
 
 app.get('/api/books/reserved-dates/:idBook', async (req, res) => {
     const idBook = req.params.idBook;
@@ -283,8 +382,14 @@ app.get('/api/books/reserved-dates/:idBook', async (req, res) => {
     }
 });
 
-app.post('/api/books/reservations', csrfProtection, async (req, res) => {
-    const { userId, idBook, reservationStartDate } = req.body;
+app.post('/api/books/reservations', csrfProtection, ensureAuthenticated, async (req, res) => {
+    const userId = req.user.idUser;
+    
+    if (!userId) {
+        return res.status(400).json({ message: "User ID is missing" });
+    }
+
+    const { idBook, reservationStartDate } = req.body;
     const reservationEndDate = moment(reservationStartDate).add(21, 'days').format('YYYY-MM-DD'); // Adds 21 days from the start of reservation date
 
     try {
@@ -346,21 +451,52 @@ app.post('/api/books/reservations', csrfProtection, async (req, res) => {
     }
 });
 
+app.get('/api/users', csrfProtection, checkAdmin, (req, res) => {
+    const searchTerms = req.query.searchTerms || '';
+    const query = 'SELECT * FROM user WHERE firstname LIKE ? OR lastname LIKE ? OR email LIKE ?';
+    connection.query(query, [`%${searchTerms}%`, `%${searchTerms}%`, `%${searchTerms}%`], (error, results) => {
+        if (error) {
+            console.error("Error fetching users:", error);
+            res.status(500).json({ message: "Error fetching users" });
+        } else {
+            res.status(200).json(results);
+        }
+    });
+});
 
-app.get('/api/user/profile/:userId', (req, res) => {
-    const userId = req.params.userId; // Get user ID from parameter
+app.put('/api/users/:idUser', csrfProtection, checkAdmin, (req, res) => {
+    const { idUser } = req.params;
+    const { firstname, lastname, email, verified, strike } = req.body;
+    const query = 'UPDATE user SET firstname = ?, lastname = ?, email = ?, verified = ?, strike = ? WHERE idUser = ?';
+    connection.query(query, [firstname, lastname, email, verified, strike, idUser], (error, results) => {
+            if (error) {
+                console.error("Error updating user:", error);
+                res.status(500).json({ message: "Error updating user" });
+            } else {
+                res.status(200).json({ message: "User updated successfully" });
+            }
+        });
+    });
+
+
+app.get('/api/user/profile', ensureAuthenticated, (req, res) => {
+    const userID = req.user.idUser;
+
+    if (!userID) {
+        return res.status(400).json({ message: "User ID is missing" });
+    }
+
     const query = 'SELECT * FROM user WHERE idUser = ?'; 
-    connection.query(query, [userId], (error, results) => {
+    connection.query(query, [userID], (error, results) => {
         if (error) {
             console.error("Erreur lors de la récupération des détails de l'utilisateur :", error);
-            res.status(500).json({ message: "Erreur lors de la récupération des détails de l'utilisateur." });
+            return res.status(500).json({ message: "Erreur lors de la récupération des détails de l'utilisateur." });
         } else {
             if (results.length > 0) {
                 const user = results[0];
-                // send user details as JSON reponse
-                res.status(200).json(user);
+                return res.status(200).json(user);
             } else {
-                res.status(404).json({ message: "Utilisateur non trouvé." });
+                return res.status(404).json({ message: "Utilisateur non trouvé." });
             }
         }
     });
@@ -374,12 +510,15 @@ app.get('/api/current_user', (req, res) => {
     }
   });
 
-app.get('/getUserID', (req, res) => {
-    if(req.user.idUser !== null) {
+app.get('/getUserID', ensureAuthenticated, (req, res) => {
+    if (req.user && req.user.idUser) {
         const userID = req.user.idUser;
         res.json({ userID });
-    } 
+    } else {
+        res.status(401).json({ message: "User not authenticated" });
+    }
 });
+
 
 module.exports = {
     jwtSecret: ''
@@ -424,8 +563,14 @@ app.get('/verify-email', (req, res) => {
     });
 });
 
-app.post('/api/user/change-password', csrfProtection, (req, res) => {
-    const { userId, oldPassword, newPassword, confirmNewPassword } = req.body;
+app.post('/api/user/change-password', csrfProtection, ensureAuthenticated, (req, res) => {
+    const userId = req.user.idUser;
+
+    if (!userId) {
+        return res.status(400).json({ message: "User ID is missing" });
+    }
+
+    const { oldPassword, newPassword, confirmNewPassword } = req.body;
     
     // Verifies all necessary fields are filled
     if (!userId || !oldPassword || !newPassword || !confirmNewPassword) {
@@ -478,7 +623,7 @@ app.post('/api/user/change-password', csrfProtection, (req, res) => {
 });
 
 // POST request to resend verification email
-app.post('/resend-verification-email', csrfProtection, async (req, res) => {
+app.post('/resend-verification-email', csrfProtection, ensureAuthenticated, async (req, res) => {
     const { email } = req.body;
 
     // Create verification token
@@ -502,8 +647,13 @@ app.post('/resend-verification-email', csrfProtection, async (req, res) => {
 });
 
 // Gets user's reservations
-app.get('/api/user/reservations', (req, res) => {
-    const userId = req.query.userId; 
+app.get('/api/user/reservations', ensureAuthenticated, (req, res) => {
+    const userId = req.user.idUser;
+
+    if (!userId) {
+        return res.status(400).json({ message: "User ID is missing" });
+    }
+
     const query = `
         SELECT r.*, b.title as bookTitle, b.idBook as bookId, b.image as bookImage
         FROM reservation r
@@ -521,9 +671,14 @@ app.get('/api/user/reservations', (req, res) => {
 });
 
 
-// Cancel a user's reservation
-app.put('/api/user/reservations/:idReservation/cancel', csrfProtection, (req, res) => {
-    const userId = req.body.userId; 
+// Cancel logged user's reservation
+app.put('/api/user/reservations/cancel', csrfProtection, ensureAuthenticated, (req, res) => {
+    const userId = req.user.idUser;
+
+    if (!userId) {
+        return res.status(400).json({ message: "User ID is missing" });
+    }
+
     const idReservation = req.params.idReservation;
 
     // Checks if user has that said reservation
@@ -551,9 +706,34 @@ app.put('/api/user/reservations/:idReservation/cancel', csrfProtection, (req, re
     });
 });
 
+// Cancel a user's reservation
+app.put('/api/useradmin/reservations/cancel', csrfProtection, ensureAuthenticated, checkAdmin, (req, res) => {
 
-// app.listen(3001, () =>{
-//     console.log("Server started on port 3001");
-// });
+    const idReservation = req.body.idReservation;
+
+    // Checks if user has that said reservation
+    const checkReservationQuery = 'SELECT * FROM reservation WHERE idReservation = ? AND status = 1'; // Check if reservation exists and is active
+    connection.query(checkReservationQuery, [idReservation], (error, results) => {
+        if (error) {
+            console.error("Erreur lors de la vérification de la réservation de l'utilisateur :", error);
+            res.status(500).json({ message: "Erreur lors de la vérification de la réservation de l'utilisateur." });
+        } else {
+            if (results.length === 0) {
+                return res.status(404).json({ message: "Réservation non trouvée." });
+            }
+
+            // Changes reservation status to 0 to cancel it
+            const cancelReservationQuery = 'UPDATE reservation SET status = 0 WHERE idReservation = ?';
+            connection.query(cancelReservationQuery, [idReservation], (error) => {
+                if (error) {
+                    console.error("Erreur lors de l'annulation de la réservation :", error);
+                    res.status(500).json({ message: "Erreur lors de l'annulation de la réservation." });
+                } else {
+                    res.status(200).json({ message: "Réservation annulée avec succès." });
+                }
+            });
+        }
+    });
+});
 
 module.exports = app;

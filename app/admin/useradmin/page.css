@@ -1,0 +1,136 @@
+.user-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.user-list div {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    margin-bottom: 5px;
+    border-radius: 5px;
+}
+
+.user-list div:hover {
+    background-color: #e0e0e0;
+}
+
+.user-details {
+    margin-top: 20px;
+}
+
+.user-details h2 {
+    margin-bottom: 20px;
+}
+
+.user-details label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.user-details label input, .user-details label textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.user-details button {
+    padding: 10px 20px;
+    background-color: #0070f3;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.user-details button:hover {
+    background-color: #005bb5;
+}
+
+.user-details table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.user-details th, .user-details td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: left;
+}
+
+.user-details th {
+    background-color: #0070f3;
+    color: white;
+}
+
+.user-details td {
+    background-color: #f9f9f9;
+}
+
+.user-details .action-buttons button {
+    margin-right: 10px;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.user-details .action-buttons button.cancel {
+    background-color: #dc3545;
+    color: white;
+}
+
+.user-details .action-buttons button.cancel:hover {
+    background-color: #c82333;
+}
+
+.user-details .action-buttons button.modify {
+    background-color: #007bff;
+    color: white;
+}
+
+.user-details .action-buttons button.modify:hover {
+    background-color: #0056b3;
+}
+
+.buttons {
+    padding: 10px 20px;
+    background-color: #0070f3;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.buttons:hover {
+    background-color: #005bb5;
+}
+
+@media (max-width: 768px) {
+    .user-details label {
+        margin-bottom: 5px;
+    }
+
+    .user-details button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .user-details table {
+        font-size: 12px;
+    }
+
+    .user-details th, .user-details td {
+        padding: 5px;
+    }
+
+    .user-details .action-buttons button {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+}

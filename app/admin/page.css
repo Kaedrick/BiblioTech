@@ -1,0 +1,89 @@
+.admin-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.admin-nav {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.admin-nav button {
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.admin-content {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+}
+
+.search-bar {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.user-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.user-list div {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    cursor: pointer;
+}
+
+.user-details label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.user-details label input, .user-details label textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.user-details h3 {
+    margin-top: 20px;
+}
+
+.user-details table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.user-details th, .user-details td {
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+
+.add-book-form {
+    margin-bottom: 20px;
+}
+
+.add-book-form label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.add-book-form label input, .add-book-form label textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.book-image {
+    max-width: 50px;
+    max-height: 50px;
+}

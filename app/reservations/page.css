@@ -2,31 +2,31 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
-  color: #fff;
+
 }
 
 .table-container h1 {
   font-size: 24px;
   margin-bottom: 20px;
-  color: #fff;
+
 }
 
 .reservations-table {
   width: 100%;
   border-collapse: collapse;
-  color: #fff;
+
 }
 
 .reservations-table th, .reservations-table td {
   border: 1px solid #ccc;
   padding: 10px;
   text-align: left;
-  color: #fff;
 }
 
 .reservations-table th {
   background-color: #0070f3;
-  color: #fff;
+  color: white;
+
 }
 
 .bookLink {

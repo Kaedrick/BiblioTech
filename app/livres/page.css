@@ -60,3 +60,41 @@
     color: #333; /* Couleur du texte */
     padding: 10px;
 }
+  
+  .search-bar:focus {
+    border-color: #0070f3;
+    box-shadow: 0 4px 12px rgba(0, 112, 243, 0.2);
+    outline: none;
+  }
+
+  .search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    max-width: 600px;
+    margin: 0 auto;
+    margin-bottom:20px;
+  }
+  
+  .search-bar {
+    width: 100%;
+    padding: 10px 15px;
+    border-radius: 25px;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    
+  }
+  
+  .clear-button {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #dc3545 !important;
+    font-size: 20px;
+    cursor: pointer;
+    transform:rotate(45deg);
+  }
+  
+  

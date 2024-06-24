@@ -1,8 +1,13 @@
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @next/next/no-img-element */
+"use client";
+
 import { useState, useEffect } from 'react';
 import axios from "axios";
 import swal from 'sweetalert';
 import DOMPurify from 'dompurify';
 require('dotenv').config();
+import './page.css';
 const serverUrl = process.env.BASE_URL || 'http://localhost:3001';
 const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
 

@@ -1,6 +1,6 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client";
 import React, { useState, useEffect } from "react";
-import { AxiosError } from "axios";
 import axios from "axios";
 import "./page.css";
 import swal from "sweetalert";
@@ -14,7 +14,6 @@ const csrfToken = Cookies.get('XSRF-TOKEN');
 
 const Profile = () => {
   const [user, setUser] = useState<any>(null);
-  const [userId, setUserId] = useState<number>(-1);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -50,7 +49,6 @@ const Profile = () => {
       const response = await axios.post(
         `${serverUrl}/api/user/change-password`,
         {
-          userId,
           oldPassword: DOMPurify.sanitize(oldPassword),
           newPassword: DOMPurify.sanitize(newPassword),
           confirmNewPassword: DOMPurify.sanitize(confirmNewPassword),
@@ -86,27 +84,11 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    const fetchCurrentUserID = async () => {
-      try {
-        const response = await axios.get(`${serverUrl}/getUserID`, {
-          withCredentials: true,
-        });
-        const userId = response.data.userID;
-        return userId;
-      } catch (error) {
-        console.error("Error fetching user ID:", error);
-        throw error;
-      }
-    };
-
     const fetchData = async () => {
       try {
-        // Fetch the user ID
-        const userIdResponse = await fetchCurrentUserID();
-        setUserId(userIdResponse);
         // Fetch user data using the retrieved user ID
         const userDataResponse = await axios.get(
-          `${serverUrl}/api/user/profile/${userIdResponse}`,
+          `${serverUrl}/api/user/profile`,
           { withCredentials: true }
         );
         setUser(userDataResponse.data);
@@ -114,8 +96,6 @@ const Profile = () => {
         console.error("Error fetching user data:", error);
       }
     };
-
-    fetchCurrentUserID(); // remove ?
     fetchData(); // Call the fetchData function
   }, []);
 
