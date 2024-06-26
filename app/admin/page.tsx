@@ -14,7 +14,7 @@ export default function Admin() {
         const checkAdmin = () => {
             axios.get(`${serverUrl}/check-admin`, { withCredentials: true })
             .then((res) => {
-                if (res.data.isAuthenticated) {
+                if (!res.data.isAuthenticated) {
                     window.location.href = '/';
                 }
             })

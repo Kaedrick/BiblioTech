@@ -181,7 +181,7 @@ app.get('/check-auth', (req, res) => {
 
 app.get('/check-admin', (req, res) => {
     const userRole = req.user.idRole;
-    if (req.isAuthenticated() && userRole == 2) {
+    if (req.isAuthenticated() && userRole === 2) {
         res.send({ isAuthenticated: true });
     } else {
         res.send({ isAuthenticated: false });
@@ -679,7 +679,7 @@ app.put('/api/user/reservations/cancel', csrfProtection, ensureAuthenticated, (r
         return res.status(400).json({ message: "User ID is missing" });
     }
 
-    const idReservation = req.params.idReservation;
+    const idReservation = req.body.idReservation;
 
     // Checks if user has that said reservation
     const checkReservationQuery = 'SELECT * FROM reservation WHERE idReservation = ? AND userId = ? AND status = 1'; // Check if reservation exists and is active
